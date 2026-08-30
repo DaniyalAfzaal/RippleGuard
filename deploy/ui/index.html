@@ -86,7 +86,7 @@
     pointer-events: none;
   }
   .header-in { display: flex; align-items: center; gap: 30px; height: 80px; }
-  .wordmark { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; }
+  .wordmark { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; }
   .wordmark .name { font-family: var(--display); font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
   .wordmark .name span { color: var(--accent); }
   .wordmark .role { font-size: 13px; color: var(--muted); letter-spacing: .18em; text-transform: uppercase; }
@@ -1046,7 +1046,7 @@
     const order = { intake: 0, analysis: 1, verdict: 2 };
     return `
       <header><div class="shell header-in">
-        <div class="wordmark"><div class="name">Ripple<span>Guard</span></div><div class="role">release gate</div></div>
+        <a class="wordmark" href="/ui/index.html"><div class="name">Ripple<span>Guard</span></div><div class="role">release gate</div></a>
         <nav class="stepper">
           ${steps
             .map(([id, n, label], i) => {
