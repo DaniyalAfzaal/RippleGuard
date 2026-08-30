@@ -1,0 +1,27 @@
+/* ------------------------------------------------------------------ */
+/* NIGHTBILL - nightly billing extract                                 */
+/* Reads the CUSMAS flat extract and builds the billing work file.    */
+/* Account key lives in positions 1 - 9 of each extract record.       */
+/* Offsets fixed since the 1998 port. Do not change without ops.      */
+/* ------------------------------------------------------------------ */
+             PGM
+             DCL        VAR(&RCD)     TYPE(*CHAR) LEN(80)
+             DCL        VAR(&ACCTKEY) TYPE(*CHAR) LEN(9)
+             DCL        VAR(&CRDLIM)  TYPE(*CHAR) LEN(8)
+             DCL        VAR(&EOF)     TYPE(*LGL)  VALUE('0')
+
+             DCLF       FILE(QTEMP/CUSEXTRACT)
+
+ READLOOP:   RCVF
+             MONMSG     MSGID(CPF0864) EXEC(GOTO CMDLBL(DONE))
+
+             CHGVAR     VAR(&RCD)     VALUE(&CUSEXTRECD)
+             CHGVAR     VAR(&ACCTKEY) VALUE(%SST(&RCD 1 9))
+             CHGVAR     VAR(&CRDLIM)  VALUE(%SST(&RCD 33 8))
+
+             /* Post one billing work record per account */
+             CALL       PGM(BILLPOST) PARM(&ACCTKEY &CRDLIM)
+
+             GOTO       CMDLBL(READLOOP)
+
+ DONE:       ENDPGM

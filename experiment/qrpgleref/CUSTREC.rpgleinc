@@ -1,0 +1,18 @@
+// ---------------------------------------------------------------
+// CUSTREC - shared customer record layout ("copybook")
+// Mirrors the CUSMAS physical file. CUSID is the CHAR(9) key.
+// Several programs copy this; a few older ones hardcode offsets.
+// ---------------------------------------------------------------
+
+dcl-ds custRec_t qualified template;
+  cusId  char(9);      // customer key - AAA999999
+  cusNam char(20);
+  cusReg char(3);
+  cusCrd packed(8:2);
+end-ds;
+
+// Flat-record positions when CUSMAS is read as CHAR(80):
+//   cusId  =  1 -  9
+//   cusNam = 10 - 29
+//   cusReg = 30 - 32
+//   cusCrd = 33 - 40 (zoned, 2 implied decimals)

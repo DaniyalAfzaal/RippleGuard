@@ -1,0 +1,26 @@
+{
+  "created": "2026-08-28T16:35:16.676Z",
+  "root": "fixtures/order-app",
+  "files": {
+    "fixtures/order-app/batch/nightly_billing.js": "3c9fb5a5d75e6c23f74ff38897d8c8a861afaa848ae7aab71cc41da9826f6e01",
+    "fixtures/order-app/batch/partner_feed.js": "30c817599a71ef3c351a0878c1a3ecd15c4cc1ffe8f9d96f7e3fc16c08b86110",
+    "fixtures/order-app/config/feed-layout.json": "60630b0b0487076d40f5e1aa0d9c27b05ccdfaa2d86cc10867fec5758f1187b4",
+    "fixtures/order-app/data/customers.dat": "1c8b45bdab72e6f55cda46777d1baf07f2c86df730bddb4f8a31c1584f4887b4",
+    "fixtures/order-app/data/orders.dat": "b7eb7915e80b91ed38d1835f4b733c3a92660d830d65bea44c82621bdae7c94d",
+    "fixtures/order-app/db/schema/customers.sql": "22edfc5c70243217fc745a5c9cb04dbbff61e44ffe9e88a8372dd0c5f4787791",
+    "fixtures/order-app/db/schema/orders.sql": "df76bdfb0ea9d466373f2f52b33851737fe4bab42aaf1258cd7ed6998cea2c1b",
+    "fixtures/order-app/db/views/customer_orders_v.sql": "ccb07e7d983b4484dffda979b13516acc90cb2a3bbf5c45d25676aa6a187db61",
+    "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md": "4d1ba7849240599bd0037b96552cb2fe62d17dab9febbf079585f9cde37e959d",
+    "fixtures/order-app/src/api/dto/customerDto.js": "426270c202e320d58cc581f4aba214c7fe9efe27822fbbf09c4d835679785144",
+    "fixtures/order-app/src/api/routes.js": "53e5ccc5fac8a29eabf584d89260fde6ca3dcdb60f634c8bf5259f5f7549bad8",
+    "fixtures/order-app/src/common/logger.js": "706e7dc6c266769bc55f12ab9f03f87be64f4ab506433cc581dd4f722b8dc57a",
+    "fixtures/order-app/src/common/recordLayouts.js": "8b05f4745226970ee5dbdd5833b2e42e6268e49b9c3ce57e1e6aa45019a82d6b",
+    "fixtures/order-app/src/common/validation.js": "21184198b44630c99b79f807e3292f0dcf137b03ce0ebae96adf435795e3bff9",
+    "fixtures/order-app/src/customer/customerService.js": "e43cd791a0aabcd82948fbb602283bfef22a4290e8ee4490ecea5b9b8e8955b3",
+    "fixtures/order-app/src/orders/orderService.js": "c0b2e046f513697a51863a521bac611643b9e2aa6a7315397c9c99810f052c42",
+    "fixtures/order-app/src/pricing/discounts.js": "5a9a6798e5f120e9b8e1609a92d79892d4dd3a6558442cc04b6b86ccf3cd3852",
+    "fixtures/order-app/src/server.js": "f5c2fbe9e774d6fc7ea02ee425d533b701aa63ca256ed8852186316d60d73181",
+    "fixtures/order-app/tests/orderService.test.js": "3f79721efa4a3f29f0b8399c1ac44ff764f18104630432422b894cc24cc1e784",
+    "fixtures/order-app/tests/validation.test.js": "890807bc769520f77f09c88705a9ff4202498af024a390086fa7ec1f33c77e01"
+  }
+}

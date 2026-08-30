@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    { "source": "/", "destination": "/ui/index.html", "permanent": true },
+    { "source": "/index.html", "destination": "/ui/index.html", "permanent": true },
+    { "source": "/how-it-works.html", "destination": "/ui/how-it-works.html", "permanent": true },
+    { "source": "/bob-sessions.html", "destination": "/ui/bob-sessions.html", "permanent": true },
+    { "source": "/presentation.html", "destination": "/ui/presentation.html", "permanent": true }
+  ]
+}

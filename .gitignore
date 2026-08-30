@@ -1,0 +1,11 @@
+node_modules/
+fixtures/order-app/out/
+*.log
+.DS_Store
+.env
+.env.*
+.vercel
+.cursor
+*.pem
+*.key
+credentials.json

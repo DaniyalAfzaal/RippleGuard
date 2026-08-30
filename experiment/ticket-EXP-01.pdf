@@ -1,0 +1,108 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 1313 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+1 0 0 1 56 736 Tm
+() Tj
+T*
+/F2 10 Tf
+(Change Request EXP-01  Customer Key Expansion \(Experiment\)) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(| Field | Value |) Tj
+T*
+(|---|---|) Tj
+T*
+(| Ticket | EXP-01 |) Tj
+T*
+(| Priority | High |) Tj
+T*
+(| System | Customer Master \(CUSMAS\) |) Tj
+T*
+(| Requested by | Enterprise Architecture |) Tj
+T*
+() Tj
+T*
+/F2 10 Tf
+(Background) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(The customer key CUSID is a CHAR\(9\) value in the format AAA999999) Tj
+T*
+(\(3 alpha characters + 6 digits\). The id space is nearly exhausted.) Tj
+T*
+() Tj
+T*
+/F2 10 Tf
+(Requirement) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(Expand the customer key from CHAR\(9\) to CHAR\(12\), new format) Tj
+T*
+(AAA999999999 \(3 alpha + 9 digits\). Every program, file definition,) Tj
+T*
+(copybook, query, and batch job that reads, writes, validates, or slices) Tj
+T*
+(the customer key must be identified and updated.) Tj
+T*
+() Tj
+T*
+/F2 10 Tf
+(Acceptance criteria) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(1. All file definitions and copybooks define the key as CHAR\(12\).) Tj
+T*
+(2. All validation logic accepts the 12-character format.) Tj
+T*
+(3. No program or batch job truncates a 12-character key.) Tj
+T*
+(4. All positional/substring access to the key is corrected, including) Tj
+T*
+(   downstream fields whose offsets shift.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000000260 00000 n 
+0000000396 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1760
+%%EOF

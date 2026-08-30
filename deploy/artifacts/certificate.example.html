@@ -1,0 +1,145 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>RippleGuard Impact Certificate — CHG-1042</title>
+<style>
+  body{font-family:'IBM Plex Sans','Segoe UI',sans-serif;background:#0a0a0b;color:#ececee;margin:0;padding:40px}
+  .card{max-width:960px;margin:0 auto;background:#141417;border:1px solid #27272c;border-radius:12px;padding:34px}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+  h1 span{color:#22d3ee}
+  .sub{color:#b4b4bc;margin-bottom:24px}
+  .verdict{display:inline-block;padding:10px 24px;border-radius:999px;font-size:18px;font-weight:700;letter-spacing:.05em;background:rgba(251,113,133,.12);color:#fb7185;border:1px solid #fb7185;margin-bottom:24px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid #27272c;padding:8px 10px;text-align:left;vertical-align:top}
+  th{color:#77777f;font-weight:600;text-transform:uppercase;font-size:10.5px;letter-spacing:.1em}
+  code{color:#22d3ee;font-family:'IBM Plex Mono',Consolas,monospace;font-size:12px}
+  .meta{margin-top:24px;color:#77777f;font-size:12px;line-height:1.7}
+  .example{position:fixed;top:14px;right:-40px;transform:rotate(35deg);background:#fbbf24;color:#0a0a0b;font-weight:700;padding:4px 60px;font-size:12px}
+</style></head><body>
+<div class="example">EXAMPLE DATA</div>
+<div class="card">
+  <h1>RippleGuard Impact Certificate</h1>
+  <div class="sub">CHG-1042 — Expand CUSTOMER_ID CHAR(9) -> CHAR(12); add GET /orders/{orderNo}/status</div>
+  <div class="verdict">RELEASE BLOCKED</div>
+  <div>Ripples: 15 total —
+    tested 10, waived 4,
+    changed 0, open 1</div>
+  <div style="margin-top:6px">Coverage: 15/15 known-impacted artifacts &nbsp;|&nbsp; grep baseline found 12/15</div>
+  <div style="margin-top:6px">Tests: PASS (34 passed, 0 failed)</div>
+  
+  <h2 style="font-size:15px;margin-top:28px">Ripple ledger</h2>
+  <table>
+    <tr><th>Id</th><th>Artifact</th><th>Risk</th><th>Status</th><th>Test</th></tr>
+    <tr>
+        <td>DB_CUSMAS</td>
+        <td><code>fixtures/order-app/db/schema/customers.sql</code></td>
+        <td>high</td>
+        <td style="color:#8d8d8d;font-weight:600">WAIVED — DDL migration script; fixture has no local DB engine. Widened to CHAR(12) and verified by review.</td>
+        <td></td>
+      </tr>
+<tr>
+        <td>DB_ORDMAS</td>
+        <td><code>fixtures/order-app/db/schema/orders.sql</code></td>
+        <td>high</td>
+        <td style="color:#8d8d8d;font-weight:600">WAIVED — DDL migration script; fixture has no local DB engine. Widened to CHAR(12) and verified by review.</td>
+        <td></td>
+      </tr>
+<tr>
+        <td>DB_CUSTORD_V</td>
+        <td><code>fixtures/order-app/db/views/customer_orders_v.sql</code></td>
+        <td>high</td>
+        <td style="color:#8d8d8d;font-weight:600">WAIVED — DDL migration script; fixture has no local DB engine. SUBSTR/CAST widened to 12 and verified by review.</td>
+        <td></td>
+      </tr>
+<tr>
+        <td>COPYBOOK</td>
+        <td><code>fixtures/order-app/src/common/recordLayouts.js</code></td>
+        <td>high</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/orderService.test.js</code></td>
+      </tr>
+<tr>
+        <td>VALIDATION</td>
+        <td><code>fixtures/order-app/src/common/validation.js</code></td>
+        <td>high</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/validation.test.js</code></td>
+      </tr>
+<tr>
+        <td>CUSTOMER_SVC</td>
+        <td><code>fixtures/order-app/src/customer/customerService.js</code></td>
+        <td>medium</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/validation.test.js</code></td>
+      </tr>
+<tr>
+        <td>ORDER_SVC</td>
+        <td><code>fixtures/order-app/src/orders/orderService.js</code></td>
+        <td>high</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/orderService.test.js</code></td>
+      </tr>
+<tr>
+        <td>API_DTO</td>
+        <td><code>fixtures/order-app/src/api/dto/customerDto.js</code></td>
+        <td>medium</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/validation.test.js</code></td>
+      </tr>
+<tr>
+        <td>API_ROUTES</td>
+        <td><code>fixtures/order-app/src/api/routes.js</code></td>
+        <td>medium</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/orderService.test.js</code></td>
+      </tr>
+<tr>
+        <td>NIGHTLY_BILLING</td>
+        <td><code>fixtures/order-app/batch/nightly_billing.js</code></td>
+        <td>high</td>
+        <td style="color:#da1e28;font-weight:600">OPEN</td>
+        <td></td>
+      </tr>
+<tr>
+        <td>PARTNER_FEED</td>
+        <td><code>fixtures/order-app/batch/partner_feed.js</code></td>
+        <td>high</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/orderService.test.js</code></td>
+      </tr>
+<tr>
+        <td>FEED_LAYOUT</td>
+        <td><code>fixtures/order-app/config/feed-layout.json</code></td>
+        <td>high</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/orderService.test.js</code></td>
+      </tr>
+<tr>
+        <td>TEST_VALIDATION</td>
+        <td><code>fixtures/order-app/tests/validation.test.js</code></td>
+        <td>medium</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/validation.test.js</code></td>
+      </tr>
+<tr>
+        <td>TEST_ORDERS</td>
+        <td><code>fixtures/order-app/tests/orderService.test.js</code></td>
+        <td>low</td>
+        <td style="color:#24a148;font-weight:600">TESTED</td>
+        <td><code>fixtures/order-app/tests/orderService.test.js</code></td>
+      </tr>
+<tr>
+        <td>OPS_RUNBOOK</td>
+        <td><code>fixtures/order-app/docs/ops/BILLING-RUNBOOK.md</code></td>
+        <td>low</td>
+        <td style="color:#8d8d8d;font-weight:600">WAIVED — Documentation artifact; updated and human-reviewed, no executable test applies.</td>
+        <td></td>
+      </tr>
+  </table>
+  <h2 style="font-size:15px;margin-top:24px;color:#da1e28">Blocking findings</h2><ul><li>UNRESOLVED RIPPLE: NIGHTLY_BILLING is "open" — Hardcoded positional offsets substring(0,9), substring(7,16), substring(32,40) truncate 12-character keys and mis-read shifted credit fields; documented as hand-maintained in the ops runbook</li></ul>
+  <div class="meta">
+    Generated 2026-08-29T21:20:03.076Z · Gate standard mode<br>
+    Ledger fingerprint (SHA-256): <code>0bcbc20c2fbf33ca3b16b6cae817fd2348930ab0cb2687a82db3a97b37eb5744</code><br>
+    Produced by the RippleGuard deterministic gate. Impact analysis, implementation,
+    and verification performed with IBM Bob (see bob_sessions/).
+  </div>
+</div>
+</body></html>

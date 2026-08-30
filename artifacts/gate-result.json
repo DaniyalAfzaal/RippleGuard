@@ -1,0 +1,42 @@
+{
+  "ticket_id": "CHG-1042",
+  "change": "Expand CUSTOMER_ID from CHAR(9) to CHAR(12) across all artifacts; add GET /orders/{orderNo}/status endpoint",
+  "ledger": "artifacts/impact-ledger.json",
+  "ledger_fingerprint": "0d21378bfcc4f4df67c680b4dbdef4c3d4f264357ca0ea8480e71aae9c764c59",
+  "generated": "2026-08-30T11:36:10.767Z",
+  "decision": "ship",
+  "strict": true,
+  "counts": {
+    "open": 0,
+    "changed": 0,
+    "tested": 12,
+    "waived": 5
+  },
+  "failures": [],
+  "warnings": [],
+  "tests": {
+    "ran": true,
+    "passed": true,
+    "pass_count": 34,
+    "fail_count": 0,
+    "output": "  duration_ms: 0.1456\n  type: 'test'\n  ...\n# Subtest: CUSTOMER_ID rejects wrong lengths (not 9 or 12)\nok 33 - CUSTOMER_ID rejects wrong lengths (not 9 or 12)\n  ---\n  duration_ms: 0.2413\n  type: 'test'\n  ...\n# Subtest: CUSTOMER_ID rejects malformed ids\nok 34 - CUSTOMER_ID rejects malformed ids\n  ---\n  duration_ms: 0.1626\n  type: 'test'\n  ...\n1..34\n# tests 34\n# suites 0\n# pass 34\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 504.705\n"
+  },
+  "recall": {
+    "total_impacted": 15,
+    "ledger_found": 15,
+    "recall": 1,
+    "missed": []
+  },
+  "grep_baseline": {
+    "found": 12,
+    "total": 15
+  },
+  "evidence_audit": {
+    "total_quotes": 60,
+    "verified": 59,
+    "mismatches": 1,
+    "audited_at": "2026-08-29T19:26:08.773Z",
+    "ledger": "artifacts/impact-ledger.json"
+  },
+  "is_example": false
+}

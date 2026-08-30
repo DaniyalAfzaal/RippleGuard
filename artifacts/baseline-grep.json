@@ -1,0 +1,86 @@
+{
+  "term": "CUSTOMER_ID",
+  "generated": "2026-08-28T16:35:16.732Z",
+  "total_impacted": 15,
+  "grep_found": 12,
+  "recall": 0.8,
+  "found": [
+    "fixtures/order-app/db/schema/customers.sql",
+    "fixtures/order-app/db/schema/orders.sql",
+    "fixtures/order-app/db/views/customer_orders_v.sql",
+    "fixtures/order-app/src/common/recordLayouts.js",
+    "fixtures/order-app/src/common/validation.js",
+    "fixtures/order-app/src/customer/customerService.js",
+    "fixtures/order-app/src/api/dto/customerDto.js",
+    "fixtures/order-app/src/api/routes.js",
+    "fixtures/order-app/batch/partner_feed.js",
+    "fixtures/order-app/tests/validation.test.js",
+    "fixtures/order-app/tests/orderService.test.js",
+    "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md"
+  ],
+  "missed": [
+    {
+      "path": "fixtures/order-app/src/orders/orderService.js",
+      "trap": "alias CUSID, no CUSTOMER_ID literal"
+    },
+    {
+      "path": "fixtures/order-app/batch/nightly_billing.js",
+      "trap": "raw positional offsets, no key name at all; documented only in ops runbook"
+    },
+    {
+      "path": "fixtures/order-app/config/feed-layout.json",
+      "trap": "field is named CUST_KEY, not CUSTOMER_ID"
+    }
+  ],
+  "false_positives": [],
+  "raw_hits": [
+    {
+      "path": "fixtures/order-app/batch/partner_feed.js",
+      "first_line": 4
+    },
+    {
+      "path": "fixtures/order-app/db/schema/customers.sql",
+      "first_line": 5
+    },
+    {
+      "path": "fixtures/order-app/db/schema/orders.sql",
+      "first_line": 6
+    },
+    {
+      "path": "fixtures/order-app/db/views/customer_orders_v.sql",
+      "first_line": 5
+    },
+    {
+      "path": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "first_line": 12
+    },
+    {
+      "path": "fixtures/order-app/src/api/dto/customerDto.js",
+      "first_line": 3
+    },
+    {
+      "path": "fixtures/order-app/src/api/routes.js",
+      "first_line": 4
+    },
+    {
+      "path": "fixtures/order-app/src/common/recordLayouts.js",
+      "first_line": 14
+    },
+    {
+      "path": "fixtures/order-app/src/common/validation.js",
+      "first_line": 7
+    },
+    {
+      "path": "fixtures/order-app/src/customer/customerService.js",
+      "first_line": 19
+    },
+    {
+      "path": "fixtures/order-app/tests/orderService.test.js",
+      "first_line": 7
+    },
+    {
+      "path": "fixtures/order-app/tests/validation.test.js",
+      "first_line": 7
+    }
+  ]
+}

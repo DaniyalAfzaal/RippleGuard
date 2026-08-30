@@ -1,0 +1,435 @@
+{
+  "ledger": "artifacts/impact-ledger.json",
+  "audited_at": "2026-08-29T19:26:08.773Z",
+  "total_quotes": 60,
+  "verified": 59,
+  "exact": 57,
+  "moved": 2,
+  "mismatches": 1,
+  "missing_files": 0,
+  "detail": [
+    {
+      "artifact": "DB_CUSTOMERS_SCHEMA",
+      "file": "fixtures/order-app/db/schema/customers.sql",
+      "line": 5,
+      "quote": "    CUSTOMER_ID   CHAR(9)      NOT NULL,",
+      "result": "verified"
+    },
+    {
+      "artifact": "DB_CUSTOMERS_SCHEMA",
+      "file": "fixtures/order-app/db/schema/customers.sql",
+      "line": 9,
+      "quote": "    CONSTRAINT PK_CUSMAS PRIMARY KEY (CUSTOMER_ID),",
+      "result": "verified"
+    },
+    {
+      "artifact": "DB_CUSTOMERS_SCHEMA",
+      "file": "fixtures/order-app/db/schema/customers.sql",
+      "line": 12,
+      "quote": "               '_________' ESCAPE '\\')  -- 9 positions, format AAA999999",
+      "result": "verified"
+    },
+    {
+      "artifact": "DB_ORDERS_SCHEMA",
+      "file": "fixtures/order-app/db/schema/orders.sql",
+      "line": 6,
+      "quote": "    CUSTOMER_ID   CHAR(9)      NOT NULL,",
+      "result": "verified"
+    },
+    {
+      "artifact": "DB_ORDERS_SCHEMA",
+      "file": "fixtures/order-app/db/schema/orders.sql",
+      "line": 12,
+      "quote": "        FOREIGN KEY (CUSTOMER_ID) REFERENCES CUSMAS (CUSTOMER_ID)",
+      "result": "verified"
+    },
+    {
+      "artifact": "DB_ORDERS_SCHEMA",
+      "file": "fixtures/order-app/db/schema/orders.sql",
+      "line": 2,
+      "quote": "-- ORDER_CUST carries the CUSMAS key; widths must stay in sync.",
+      "result": "verified"
+    },
+    {
+      "artifact": "DB_CUSTOMER_ORDERS_VIEW",
+      "file": "fixtures/order-app/db/views/customer_orders_v.sql",
+      "line": 5,
+      "quote": "SELECT CAST(SUBSTR(C.CUSTOMER_ID, 1, 9) AS CHAR(9)) AS CUSTOMER_KEY,",
+      "result": "verified"
+    },
+    {
+      "artifact": "DB_CUSTOMER_ORDERS_VIEW",
+      "file": "fixtures/order-app/db/views/customer_orders_v.sql",
+      "line": 2,
+      "quote": "-- The SUBSTR guards against legacy records with trailing filler.",
+      "result": "verified"
+    },
+    {
+      "artifact": "DATA_CUSTOMERS_DAT",
+      "file": "fixtures/order-app/data/customers.dat",
+      "line": 1,
+      "quote": "ABC100001Aurora Textiles     NE 00250000",
+      "result": "verified"
+    },
+    {
+      "artifact": "DATA_CUSTOMERS_DAT",
+      "file": "fixtures/order-app/data/customers.dat",
+      "line": 2,
+      "quote": "ABC100002Beacon Foods        SE 00120000",
+      "result": "verified"
+    },
+    {
+      "artifact": "DATA_ORDERS_DAT",
+      "file": "fixtures/order-app/data/orders.dat",
+      "line": 1,
+      "quote": "0000101ABC100001000012500S20260810",
+      "result": "verified"
+    },
+    {
+      "artifact": "DATA_ORDERS_DAT",
+      "file": "fixtures/order-app/data/orders.dat",
+      "line": 2,
+      "quote": "0000102ABC100001000260000O20260815",
+      "result": "verified"
+    },
+    {
+      "artifact": "COMMON_VALIDATION",
+      "file": "fixtures/order-app/src/common/validation.js",
+      "line": 7,
+      "quote": "const CUSTOMER_ID_LENGTH = 9;",
+      "result": "verified"
+    },
+    {
+      "artifact": "COMMON_VALIDATION",
+      "file": "fixtures/order-app/src/common/validation.js",
+      "line": 10,
+      "quote": "const CUSTOMER_ID_PATTERN = /^[A-Z]{3}[0-9]{6}$/;",
+      "result": "verified"
+    },
+    {
+      "artifact": "COMMON_VALIDATION",
+      "file": "fixtures/order-app/src/common/validation.js",
+      "line": 15,
+      "quote": "    id.length === CUSTOMER_ID_LENGTH &&",
+      "result": "verified"
+    },
+    {
+      "artifact": "COMMON_RECORD_LAYOUTS",
+      "file": "fixtures/order-app/src/common/recordLayouts.js",
+      "line": 14,
+      "quote": "const CUSTOMER_ID = Object.freeze({ start: 0, len: 9, pad: ' ' }); // key: AAA999999",
+      "result": "verified"
+    },
+    {
+      "artifact": "COMMON_RECORD_LAYOUTS",
+      "file": "fixtures/order-app/src/common/recordLayouts.js",
+      "line": 18,
+      "quote": "const CUST_RECLEN = 40;",
+      "result": "verified"
+    },
+    {
+      "artifact": "COMMON_RECORD_LAYOUTS",
+      "file": "fixtures/order-app/src/common/recordLayouts.js",
+      "line": 22,
+      "quote": "const ORDER_CUST = Object.freeze({ start: 7, len: 9, pad: ' ' }); // same width as CUSTOMER_ID",
+      "result": "verified"
+    },
+    {
+      "artifact": "COMMON_RECORD_LAYOUTS",
+      "file": "fixtures/order-app/src/common/recordLayouts.js",
+      "line": 26,
+      "quote": "const ORDER_RECLEN = 34;",
+      "result": "verified"
+    },
+    {
+      "artifact": "SVC_ORDER_SERVICE",
+      "file": "fixtures/order-app/src/orders/orderService.js",
+      "line": 12,
+      "quote": "const CUSID_LEN = 9;",
+      "result": "verified"
+    },
+    {
+      "artifact": "SVC_ORDER_SERVICE",
+      "file": "fixtures/order-app/src/orders/orderService.js",
+      "line": 40,
+      "quote": "  const key = String(custNo).padEnd(CUSID_LEN, ' ').slice(0, CUSID_LEN).trim();",
+      "result": "verified"
+    },
+    {
+      "artifact": "SVC_ORDER_SERVICE",
+      "file": "fixtures/order-app/src/orders/orderService.js",
+      "line": 8,
+      "quote": "const layouts = require('../common/recordLayouts');",
+      "result": "verified"
+    },
+    {
+      "artifact": "SVC_CUSTOMER_SERVICE",
+      "file": "fixtures/order-app/src/customer/customerService.js",
+      "line": 9,
+      "quote": "const { assertValidCustomerId } = require('../common/validation');",
+      "result": "verified"
+    },
+    {
+      "artifact": "SVC_CUSTOMER_SERVICE",
+      "file": "fixtures/order-app/src/customer/customerService.js",
+      "line": 27,
+      "quote": "  assertValidCustomerId(customerId);",
+      "result": "verified"
+    },
+    {
+      "artifact": "SVC_CUSTOMER_SERVICE",
+      "file": "fixtures/order-app/src/customer/customerService.js",
+      "line": 29,
+      "quote": "  const key = layouts.put(customerId, layouts.CUSTOMER_ID);",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_NIGHTLY_BILLING",
+      "file": "fixtures/order-app/batch/nightly_billing.js",
+      "line": 30,
+      "quote": "    const acct = line.substring(0, 9);",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_NIGHTLY_BILLING",
+      "file": "fixtures/order-app/batch/nightly_billing.js",
+      "line": 39,
+      "quote": "    const acct = line.substring(7, 16); // ORDMAS acct key",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_NIGHTLY_BILLING",
+      "file": "fixtures/order-app/batch/nightly_billing.js",
+      "line": 40,
+      "quote": "    const amt = Number(line.substring(16, 25)) / 100;",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_NIGHTLY_BILLING",
+      "file": "fixtures/order-app/batch/nightly_billing.js",
+      "line": 41,
+      "quote": "    const credit = creditByAcct[acct.trim().padEnd(9, ' ').substring(0, 9)];",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_NIGHTLY_BILLING",
+      "file": "fixtures/order-app/batch/nightly_billing.js",
+      "line": 31,
+      "quote": "    creditByAcct[acct] = Number(line.substring(32, 40)) / 100;",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_NIGHTLY_BILLING",
+      "file": "fixtures/order-app/batch/nightly_billing.js",
+      "line": 36,
+      "quote": "    const stat = line.substring(25, 26);",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_NIGHTLY_BILLING",
+      "file": "fixtures/order-app/batch/nightly_billing.js",
+      "line": 54,
+      "quote": "      `${b.acct.padEnd(9, ' ')}|${String(b.amount.toFixed(2)).padStart(12, ' ')}|${`",
+      "result": "mismatch",
+      "actual": "`${b.acct.padEnd(9, ' ')}|${String(b.amount.toFixed(2)).padStart(12, ' ')}|${"
+    },
+    {
+      "artifact": "BATCH_PARTNER_FEED",
+      "file": "fixtures/order-app/config/feed-layout.json",
+      "line": 6,
+      "quote": "    { \"name\": \"CUST_KEY\", \"offset\": 0, \"width\": 9, \"pad\": \" \" },",
+      "result": "verified"
+    },
+    {
+      "artifact": "BATCH_PARTNER_FEED",
+      "file": "fixtures/order-app/config/feed-layout.json",
+      "line": 4,
+      "quote": "  \"record_length\": 40,",
+      "result": "verified"
+    },
+    {
+      "artifact": "CONFIG_FEED_LAYOUT",
+      "file": "fixtures/order-app/config/feed-layout.json",
+      "line": 2,
+      "quote": "  \"feed\": \"PARTNER-DAILY-V1\",",
+      "result": "verified"
+    },
+    {
+      "artifact": "CONFIG_FEED_LAYOUT",
+      "file": "fixtures/order-app/config/feed-layout.json",
+      "line": 6,
+      "quote": "    { \"name\": \"CUST_KEY\", \"offset\": 0, \"width\": 9, \"pad\": \" \" },",
+      "result": "verified"
+    },
+    {
+      "artifact": "CONFIG_FEED_LAYOUT",
+      "file": "fixtures/order-app/config/feed-layout.json",
+      "line": 7,
+      "quote": "    { \"name\": \"CUST_NAME\", \"offset\": 9, \"width\": 20, \"pad\": \" \" },",
+      "result": "verified"
+    },
+    {
+      "artifact": "CONFIG_FEED_LAYOUT",
+      "file": "fixtures/order-app/config/feed-layout.json",
+      "line": 8,
+      "quote": "    { \"name\": \"CUST_REGION\", \"offset\": 29, \"width\": 3, \"pad\": \" \" },",
+      "result": "verified"
+    },
+    {
+      "artifact": "CONFIG_FEED_LAYOUT",
+      "file": "fixtures/order-app/config/feed-layout.json",
+      "line": 9,
+      "quote": "    { \"name\": \"CREDIT_LIMIT\", \"offset\": 32, \"width\": 8, \"pad\": \"0\" }",
+      "result": "verified"
+    },
+    {
+      "artifact": "API_CUSTOMER_DTO",
+      "file": "fixtures/order-app/src/api/dto/customerDto.js",
+      "line": 10,
+      "quote": "    customerId: { type: 'string', maxLength: 9, pattern: '^[A-Z]{3}[0-9]{6}$' },",
+      "result": "verified"
+    },
+    {
+      "artifact": "API_CUSTOMER_DTO",
+      "file": "fixtures/order-app/src/api/dto/customerDto.js",
+      "line": 20,
+      "quote": "    customerId: customer.id,",
+      "result": "verified"
+    },
+    {
+      "artifact": "API_CUSTOMER_DTO",
+      "file": "fixtures/order-app/src/api/dto/customerDto.js",
+      "line": 30,
+      "quote": "    customerId: order.custNo,",
+      "result": "verified"
+    },
+    {
+      "artifact": "API_ROUTES",
+      "file": "fixtures/order-app/src/api/routes.js",
+      "line": 31,
+      "quote": "    if (!isValidCustomerId(id)) {",
+      "result": "verified"
+    },
+    {
+      "artifact": "API_ROUTES",
+      "file": "fixtures/order-app/src/api/routes.js",
+      "line": 42,
+      "quote": "    if (!isValidCustomerId(id)) {",
+      "result": "verified"
+    },
+    {
+      "artifact": "API_ROUTES",
+      "file": "fixtures/order-app/src/api/routes.js",
+      "line": 49,
+      "quote": "  if (parts[0] === 'orders' && parts.length === 2) {",
+      "result": "verified"
+    },
+    {
+      "artifact": "API_ROUTES",
+      "file": "fixtures/order-app/src/api/routes.js",
+      "line": 59,
+      "quote": "  return json(res, 404, { error: 'not found' });",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_ORDER_SERVICE",
+      "file": "fixtures/order-app/tests/orderService.test.js",
+      "line": 7,
+      "quote": "// Fixture data uses 9-character CUSTOMER_ID keys (see data/*.dat).",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_ORDER_SERVICE",
+      "file": "fixtures/order-app/tests/orderService.test.js",
+      "line": 10,
+      "quote": "  const orders = ordersForCustomer('ABC100001');",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_ORDER_SERVICE",
+      "file": "fixtures/order-app/tests/orderService.test.js",
+      "line": 21,
+      "quote": "  assert.equal(order.custNo, 'ABC100001');",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_ORDER_SERVICE",
+      "file": "fixtures/order-app/tests/orderService.test.js",
+      "line": 29,
+      "quote": "  assert.equal(loadOrders().length, 8);",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_VALIDATION",
+      "file": "fixtures/order-app/tests/validation.test.js",
+      "line": 18,
+      "quote": "  assert.equal(CUSTOMER_ID_LENGTH, 9);",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_VALIDATION",
+      "file": "fixtures/order-app/tests/validation.test.js",
+      "line": 24,
+      "quote": "  assert.equal(isValidCustomerId('ABC123456789'), false); // 12",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_VALIDATION",
+      "file": "fixtures/order-app/tests/validation.test.js",
+      "line": 12,
+      "quote": "test('CUSTOMER_ID accepts the CHAR(9) CUSMAS format', () => {",
+      "result": "verified"
+    },
+    {
+      "artifact": "TEST_VALIDATION",
+      "file": "fixtures/order-app/tests/validation.test.js",
+      "line": 17,
+      "quote": "test('CUSTOMER_ID length matches the master key width', () => {",
+      "result": "verified"
+    },
+    {
+      "artifact": "DOCS_BILLING_RUNBOOK",
+      "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "line": 12,
+      "quote": "- Customer keys are `CUSTOMER_ID CHAR(9)`, format `AAA999999`.",
+      "result": "verified"
+    },
+    {
+      "artifact": "DOCS_BILLING_RUNBOOK",
+      "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "line": 14,
+      "quote": "  the account key is **positions 1-9** of each record and the credit",
+      "result": "verified"
+    },
+    {
+      "artifact": "DOCS_BILLING_RUNBOOK",
+      "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "line": 15,
+      "quote": "  limit is **positions 33-40**. These offsets were fixed in the 1998",
+      "result": "verified"
+    },
+    {
+      "artifact": "DOCS_BILLING_RUNBOOK",
+      "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "line": 17,
+      "quote": "  `src/common/recordLayouts.js`. If the master record layout changes,",
+      "result": "verified"
+    },
+    {
+      "artifact": "DOCS_BILLING_RUNBOOK",
+      "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "line": 19,
+      "quote": "  `config/feed-layout.json` and changes require a spec version bump",
+      "result": "verified_moved",
+      "found_line": 20
+    },
+    {
+      "artifact": "DOCS_BILLING_RUNBOOK",
+      "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "line": 27,
+      "quote": "  There is no length assertion in the job. (Known debt, ticket OPS-311.)",
+      "result": "verified_moved",
+      "found_line": 28
+    }
+  ]
+}

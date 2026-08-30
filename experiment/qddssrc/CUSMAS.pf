@@ -1,0 +1,10 @@
+     A*----------------------------------------------------------------
+     A* CUSMAS - CUSTOMER MASTER PHYSICAL FILE
+     A* KEY: CUSID CHAR(9)  FORMAT AAA999999
+     A*----------------------------------------------------------------
+     A          R CUSREC
+     A            CUSID          9A         TEXT('CUSTOMER KEY')
+     A            CUSNAM        20A         TEXT('CUSTOMER NAME')
+     A            CUSREG         3A         TEXT('REGION CODE')
+     A            CUSCRD         8S 2       TEXT('CREDIT LIMIT')
+     A          K CUSID

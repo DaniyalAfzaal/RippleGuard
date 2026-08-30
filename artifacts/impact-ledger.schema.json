@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RippleGuard Impact Ledger",
+  "description": "Evidence-linked blast radius for one change ticket. Written by the rippleguard-analyze Bob skill; statuses advanced by rippleguard-implement; audited by rippleguard-verify; enforced by scripts/ripple-gate.js.",
+  "type": "object",
+  "required": ["ticket_id", "change", "artifacts"],
+  "properties": {
+    "ticket_id": { "type": "string" },
+    "change": { "type": "string" },
+    "generated_by": {
+      "type": "string",
+      "description": "Which Bob task/skill produced or last updated this ledger."
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "why", "risk", "status", "evidence"],
+        "properties": {
+          "id": { "type": "string", "description": "Short uppercase handle, e.g. NIGHTLY_BILLING" },
+          "path": { "type": "string", "description": "Path relative to repo root" },
+          "why": { "type": "string", "description": "One sentence: why this artifact is in the blast radius" },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["file", "line", "quote"],
+              "properties": {
+                "file": { "type": "string" },
+                "line": { "type": "integer" },
+                "quote": { "type": "string", "description": "Exact source line proving the impact" }
+              }
+            }
+          },
+          "risk": { "type": "string", "enum": ["high", "medium", "low"] },
+          "domain": {
+            "type": "string",
+            "enum": ["database", "code", "batch", "api", "test", "docs", "config"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "changed", "tested", "waived"],
+            "description": "open = found, untouched; changed = edited, unproven; tested = edited and covered by a passing test; waived = consciously excluded with a reason"
+          },
+          "test": { "type": "string", "description": "Path of the test that proves this artifact, required when status = tested" },
+          "waiver_reason": { "type": "string", "description": "Required when status = waived" }
+        }
+      }
+    }
+  }
+}

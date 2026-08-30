@@ -1,0 +1,205 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 2204 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+1 0 0 1 56 736 Tm
+() Tj
+T*
+/F2 10 Tf
+(Change Request CHG-1042) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+/F2 10 Tf
+(Customer ID Expansion and Order Status API) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(| Field | Value |) Tj
+T*
+(|---|---|) Tj
+T*
+(| Ticket | CHG-1042 |) Tj
+T*
+(| Priority | High |) Tj
+T*
+(| System | OrderCore \(customer master + order master\) |) Tj
+T*
+(| Requested by | Enterprise Architecture |) Tj
+T*
+(| Target release | 2026.9 |) Tj
+T*
+() Tj
+T*
+/F2 10 Tf
+(Background) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(OrderCore customer keys \(CUSTOMER_ID\) are CHAR\(9\), format AAA999999) Tj
+T*
+(\(3 alpha + 6 digits\). Following the Northfield Distribution merger the) Tj
+T*
+(combined customer base exhausts the 6-digit space in Q4 2026.) Tj
+T*
+() Tj
+T*
+/F2 10 Tf
+(Requirement R1  expand CUSTOMER_ID to CHAR\(12\)) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(New format: AAA999999999 \(3 alpha + 9 digits, length 12\).) Tj
+T*
+() Tj
+T*
+(Scope: every artifact that stores, validates, formats, slices, or) Tj
+T*
+(transmits the customer key must be identified and updated. This) Tj
+T*
+(includes, at minimum: database schemas and views, shared record) Tj
+T*
+(layouts, service logic, API contracts, batch jobs, partner feed) Tj
+T*
+(specifications, operational documentation, and tests.) Tj
+T*
+() Tj
+T*
+(Transition rule: during the transition, ids of BOTH formats are valid) Tj
+T*
+(input \(AAA999999 and AAA999999999\). Stored fixed-width records use the) Tj
+T*
+(new 12-character field width; legacy 9-character ids are right-padded) Tj
+T*
+(with spaces. Downstream field offsets shift accordingly.) Tj
+T*
+() Tj
+T*
+(Data extracts in data/ must be migrated to the new record widths. A) Tj
+T*
+(one-time migration script \(fixtures/order-app/scripts/\) is in scope;) Tj
+T*
+(production data migration will be executed by ops at release using it.) Tj
+T*
+() Tj
+T*
+/F2 10 Tf
+(Requirement R2  order status API) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(Add endpoint: GET /orders/{orderNo}/status) Tj
+T*
+() Tj
+T*
+(Response body \(JSON\):) Tj
+T*
+({ "orderNo": string, "customerId": string, "status": string,) Tj
+T*
+(  "statusName": string, "statusDate": string \(YYYYMMDD\) }) Tj
+T*
+() Tj
+T*
+(Errors: 400 invalid order number, 404 unknown order.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 1013 >>
+stream
+BT
+/F1 10 Tf
+14 TL
+1 0 0 1 56 736 Tm
+/F2 10 Tf
+(Acceptance criteria) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(1. All schema definitions and shared layouts define the key as CHAR\(12\).) Tj
+T*
+(2. Validation accepts both 9 and 12 character formats during transition.) Tj
+T*
+(3. NO consumer truncates a 12-character customer id. This includes) Tj
+T*
+(   positional/offset-based consumers.) Tj
+T*
+(4. The partner feed spec is bumped to version V2 with the widened key) Tj
+T*
+(   and updated record length.) Tj
+T*
+(5. All tests pass, including new tests proving 12-character ids survive) Tj
+T*
+(   every read/write path end to end.) Tj
+T*
+(6. The order status endpoint returns correct data for shipped, open,) Tj
+T*
+(   billed, and closed orders.) Tj
+T*
+() Tj
+T*
+/F2 10 Tf
+(Constraints) Tj
+T*
+/F1 10 Tf
+() Tj
+T*
+(- The nightly billing window \(02:00\) is unchanged.) Tj
+T*
+(- Changes to batch jobs require Finance Ops sign-off) Tj
+T*
+(  \(see docs/ops/BILLING-RUNBOOK.md\).) Tj
+T*
+(- No new runtime dependencies.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000191 00000 n 
+0000000266 00000 n 
+0000000402 00000 n 
+0000002657 00000 n 
+0000002793 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+3857
+%%EOF

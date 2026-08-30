@@ -1,0 +1,1742 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RippleGuard — How it works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #141417;
+    --surface2: #1c1c21;
+    --border: #27272c;
+    --border2: #333339;
+    --text: #ececee;
+    --text2: #b4b4bc;
+    --muted: #77777f;
+    --accent: #22d3ee;
+    --accent-dim: rgba(34,211,238,.12);
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --danger: #fb7185;
+    --waived: #71717a;
+    --quote: #e8c47c;
+    --mono: 'IBM Plex Mono', Consolas, monospace;
+    --display: 'IBM Plex Serif', Georgia, serif;
+    --ease: cubic-bezier(.16, 1, .3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: auto; scroll-padding-top: 0; }
+  html, body { margin: 0; overflow-x: clip; }
+  body {
+    background:
+      radial-gradient(1300px 640px at 14% -12%, rgba(34,211,238,.09) 0%, transparent 58%),
+      radial-gradient(1100px 620px at 104% -10%, rgba(129,140,248,.06) 0%, transparent 55%),
+      radial-gradient(1000px 600px at 102% 114%, rgba(52,211,153,.05) 0%, transparent 55%),
+      radial-gradient(800px 520px at -8% 110%, rgba(232,121,249,.04) 0%, transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1;
+    background-image:
+      radial-gradient(1600px 1000px at 50% 34%, transparent 62%, rgba(0,0,0,.32) 100%),
+      radial-gradient(rgba(236,236,238,.03) 1px, transparent 1.4px);
+    background-size: 100% 100%, 30px 30px;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; z-index: -1;
+    width: 980px; height: 980px; border-radius: 50%;
+    left: -260px; top: -360px;
+    background: radial-gradient(circle, rgba(34,211,238,.065) 0%, rgba(129,140,248,.03) 45%, transparent 68%);
+    animation: aurora 30s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes aurora {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(46vw, 12vh) scale(1.12); }
+    100% { transform: translate(18vw, 42vh) scale(.92); }
+  }
+  .shell, .shell-wide {
+    width: 100%;
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 48px;
+  }
+
+  /* ------------------------------------------------------------ nav */
+  header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,11,.85);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 40;
+  }
+  header::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: linear-gradient(90deg, transparent 2%, rgba(34,211,238,.45) 16%, rgba(34,211,238,.08) 46%, transparent 82%);
+    pointer-events: none;
+  }
+  .header-in { display: flex; align-items: center; gap: 28px; height: 72px; }
+  .wordmark { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; }
+  .wordmark .name { font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+  .wordmark .name span { color: var(--accent); }
+  .wordmark .role { font-size: 12px; color: var(--muted); letter-spacing: .18em; text-transform: uppercase; }
+  .back-link {
+    color: var(--text2); text-decoration: none; font-size: 14px; letter-spacing: .02em;
+    transition: color .2s;
+  }
+  .back-link:hover { color: var(--accent); }
+  .back-link em { font-style: normal; color: var(--accent); margin-right: 6px; }
+  .header-end { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .real-badge {
+    font-size: 12px; font-weight: 700; letter-spacing: .14em;
+    color: #083344; background: linear-gradient(180deg, #67e8f9, #22d3ee);
+    border-radius: 5px; padding: 6px 13px;
+    box-shadow: 0 4px 14px rgba(34,211,238,.28);
+  }
+  .progress {
+    position: absolute; left: 0; bottom: -1px; height: 2px; width: 0;
+    background: var(--accent);
+    box-shadow: 0 0 12px rgba(34,211,238,.55);
+    z-index: 2; pointer-events: none;
+  }
+
+  /* ------------------------------------------------------------ type */
+  .kicker {
+    font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; font-family: var(--mono);
+    margin: 0 0 16px;
+  }
+  .sec-h {
+    font-family: var(--display);
+    font-size: clamp(32px, 3.4vw, 48px);
+    font-weight: 500; letter-spacing: -.03em; line-height: 1.18; margin: 0 0 18px;
+  }
+  .lede { color: var(--text2); line-height: 1.7; font-size: 18px; margin: 0; max-width: 62ch; }
+  section.block { padding: 120px 0 48px; }
+  #ledger, #map, #gate { padding-top: calc(120px - 5vh); }
+  section[id], .pipeline { scroll-margin-top: 0; }
+
+  /* Ripple, Trust, Receipts: fully centered intros; cards stay left-aligned */
+  .center-sec .shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .center-sec .kicker,
+  .center-sec .sec-h,
+  .center-sec .lede {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .center-sec .ledger-grid,
+  .center-sec .stats,
+  .center-sec .bars,
+  .center-sec .roster,
+  .center-sec .roster-detail,
+  .center-sec .coins,
+  .center-sec .honest,
+  .center-sec .callouts {
+    width: 100%;
+    text-align: left;
+  }
+  .center-sec .sessions { justify-content: center; }
+  .center-sec .callout {
+    width: 100%;
+    text-align: left;
+  }
+  .panel {
+    background: linear-gradient(180deg, #18181d 0%, #121215 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 16px 36px rgba(0,0,0,.32);
+  }
+
+  /* reveal */
+  [data-reveal] {
+    opacity: 0; transform: translateY(22px);
+    transition: opacity .7s var(--ease), transform .7s var(--ease);
+  }
+  [data-reveal].in { opacity: 1; transform: none; }
+  [data-reveal].d1 { transition-delay: .08s; }
+  [data-reveal].d2 { transition-delay: .16s; }
+  [data-reveal].d3 { transition-delay: .24s; }
+
+  /* ------------------------------------------------------------ hero */
+  .hero {
+    position: relative; isolation: isolate;
+    min-height: calc(100vh - 72px);
+    display: flex; align-items: center;
+    padding: 72px 0 80px;
+  }
+  .hero-rings {
+    position: absolute; left: 50%; top: 42%;
+    width: 720px; height: 720px; margin: -360px 0 0 -360px;
+    pointer-events: none; z-index: 0;
+  }
+  .hero-rings i {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 1px solid rgba(34,211,238,.09);
+    animation: ringPulse 9s var(--ease) infinite;
+  }
+  .hero-rings i:nth-child(2) { inset: 70px; animation-delay: .7s; border-color: rgba(34,211,238,.08); }
+  .hero-rings i:nth-child(3) { inset: 140px; animation-delay: 1.4s; border-color: rgba(34,211,238,.07); }
+  .hero-rings i:nth-child(4) { inset: 210px; animation-delay: 2.1s; border-color: rgba(34,211,238,.05); }
+  @keyframes ringPulse {
+    0%, 100% { transform: scale(1); opacity: .65; }
+    50% { transform: scale(1.035); opacity: 1; }
+  }
+  .hero-copy { position: relative; z-index: 1; max-width: 860px; }
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(46px, 6.2vw, 78px);
+    font-weight: 500; letter-spacing: -.035em;
+    line-height: 1.08; margin: 0 0 28px;
+  }
+  .hero h1 span { display: block; white-space: nowrap; }
+  .hero h1 .pay {
+    color: var(--accent); font-style: italic; font-weight: 400;
+    text-shadow: 0 0 46px rgba(34,211,238,.35);
+  }
+  .hero .lede { font-size: 21px; max-width: 68ch; }
+  .chips {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 42px;
+  }
+  .chip {
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit; font-size: 13px; color: var(--text2);
+    background: rgba(20,20,23,.72);
+    border: 1px solid var(--border);
+    border-radius: 999px; padding: 8px 12px;
+    text-decoration: none; letter-spacing: .02em;
+    white-space: nowrap;
+    transition: border-color .2s, color .2s, transform .2s var(--ease);
+  }
+  .chip:hover {
+    color: var(--accent); border-color: rgba(34,211,238,.4);
+    transform: translateY(-1px);
+  }
+  .chip b { font-family: var(--mono); font-weight: 500; color: var(--accent); margin-right: 6px; font-size: 11px; }
+  .chip.on {
+    color: var(--text); border-color: rgba(34,211,238,.5);
+    background: var(--accent-dim);
+  }
+
+  /* page-wide floating section dock */
+  .sec-dock {
+    position: fixed; right: 18px; top: 50%; transform: translateY(-50%);
+    z-index: 35;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 10px 8px;
+    border-radius: 16px;
+    background: rgba(10,10,11,.58);
+    backdrop-filter: blur(16px) saturate(1.15);
+    -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    border: 1px solid rgba(255,255,255,.07);
+    box-shadow: 0 16px 40px rgba(0,0,0,.4);
+  }
+  .sec-dock button {
+    display: flex; align-items: center; gap: 8px;
+    background: none; border: 0; color: var(--muted);
+    font: inherit; font-size: 11px; letter-spacing: .04em;
+    padding: 5px 6px; cursor: pointer; border-radius: 8px;
+    transition: color .25s, background .25s;
+  }
+  .sec-dock button i {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border2); flex-shrink: 0;
+    transition: background .25s, box-shadow .25s, transform .25s var(--ease);
+  }
+  .sec-dock button:hover { color: var(--text2); background: rgba(255,255,255,.04); }
+  .sec-dock button.on { color: var(--text); }
+  .sec-dock button.on i {
+    background: var(--accent); transform: scale(1.25);
+    box-shadow: 0 0 10px rgba(34,211,238,.7);
+  }
+  .sec-dock .lab { display: none; white-space: nowrap; }
+  .sec-dock:hover .lab { display: inline; }
+
+  /* ------------------------------------------------------------ fear */
+  .fear-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 48px; align-items: center;
+  }
+  .pull {
+    font-family: var(--display); font-size: clamp(26px, 2.4vw, 34px);
+    font-weight: 400; letter-spacing: -.02em; line-height: 1.35; margin: 0 0 22px;
+    text-wrap: pretty;
+  }
+  .pull em { color: var(--accent); font-style: italic; }
+  .pull .keep { white-space: nowrap; }
+  .bytes {
+    padding: 26px 26px 22px;
+  }
+  .bytes-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 18px; font-size: 12px; color: var(--muted);
+    letter-spacing: .1em; text-transform: uppercase; font-family: var(--mono);
+  }
+  .bytes-row { margin-bottom: 22px; }
+  .bytes-row:last-child { margin-bottom: 0; }
+  .bytes-meta {
+    display: flex; justify-content: space-between; gap: 12px;
+    font-size: 12px; color: var(--text2); margin-bottom: 8px; font-family: var(--mono);
+  }
+  .cells { display: flex; gap: 3px; flex-wrap: wrap; }
+  .cell {
+    width: 28px; height: 34px; border-radius: 5px; flex-shrink: 0;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    transition: width .55s var(--ease), opacity .45s var(--ease), transform .55s var(--ease),
+      background .5s, border-color .5s, box-shadow .5s, margin .55s var(--ease);
+  }
+  .cell.id { background: rgba(34,211,238,.12); border-color: rgba(34,211,238,.4); color: #a5f3fc; }
+  .cell.name { color: var(--text2); }
+  .cell.amt { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.35); color: var(--warn); }
+  .cell.ghost {
+    width: 0; margin: 0; padding: 0; border-width: 0; opacity: 0; overflow: hidden;
+    transform: scaleX(.15);
+  }
+  .shift-on .cell.ghost {
+    width: 28px; opacity: 1; transform: none;
+    background: rgba(251,113,133,.14); border: 1px solid rgba(251,113,133,.45); color: var(--danger);
+  }
+  .shift-on .cell.ghost:nth-of-type(10) { transition-delay: .04s; }
+  .shift-on .cell.ghost:nth-of-type(11) { transition-delay: .12s; }
+  .shift-on .cell.ghost:nth-of-type(12) { transition-delay: .2s; }
+  .bytes-row.after { opacity: .38; transition: opacity .45s var(--ease); }
+  .shift-on .bytes-row.after { opacity: 1; }
+  .shift-on .after .cell.corrupt {
+    background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.5); color: var(--danger);
+    box-shadow: 0 0 16px rgba(251,113,133,.18);
+    transition-delay: .28s;
+  }
+  .replay:disabled { opacity: .5; cursor: default; }
+  .bytes-note {
+    margin-top: 16px; font-size: 13px; color: var(--muted); line-height: 1.55;
+  }
+  .bytes-note code { font-family: var(--mono); color: var(--danger); font-size: 12px; }
+
+  /* ------------------------------------------------------------ traps */
+  .traps-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px; margin-top: 36px;
+  }
+  .trap {
+    padding: 22px 22px 20px;
+    display: flex; flex-direction: column; min-height: 100%;
+  }
+  .trap-k {
+    font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--danger); font-weight: 600; margin-bottom: 10px;
+  }
+  .trap h3 {
+    font-family: var(--display); font-size: 22px; font-weight: 500;
+    letter-spacing: -.02em; margin: 0 0 8px;
+  }
+  .trap .why { color: var(--text2); font-size: 14px; line-height: 1.55; margin: 0 0 16px; flex: 1; }
+  .trap pre {
+    margin: 0; padding: 12px 14px;
+    background: rgba(0,0,0,.28);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--quote);
+    border-radius: 8px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.55;
+    color: var(--quote); white-space: pre; overflow-x: auto;
+  }
+  .trap .file {
+    margin-top: 12px; font-family: var(--mono); font-size: 11px; color: var(--muted);
+  }
+  .grep-strip {
+    margin-top: 22px; padding: 16px 22px;
+    display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+  }
+  .grep-strip .cmd {
+    font-family: var(--mono); font-size: 14px; color: var(--text);
+  }
+  .grep-strip .cmd b { color: var(--warn); }
+  .grep-strip .miss { font-size: 13px; color: var(--text2); }
+  .grep-strip .miss em { font-style: normal; color: var(--danger); font-family: var(--mono); font-size: 12px; }
+
+  /* ------------------------------------------------------------ pipeline */
+  .pipeline { padding: 64px 0 36px; }
+  .pipe-wrap {
+    display: grid; grid-template-columns: 220px minmax(0, 1fr);
+    gap: 22px; align-items: stretch;
+  }
+  .pipe-slot {
+    grid-column: 1;
+    position: relative;
+    min-height: 100%;
+  }
+  .pipe-cards { grid-column: 2; min-width: 0; }
+  .pipe-rail {
+    position: sticky; top: 104px; z-index: 26;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 22px 18px 18px;
+    border-radius: 20px;
+    background: rgba(10,10,11,.72);
+    backdrop-filter: blur(22px) saturate(1.25);
+    -webkit-backdrop-filter: blur(22px) saturate(1.25);
+    border: 1px solid rgba(34,211,238,.2);
+    box-shadow:
+      0 28px 64px rgba(0,0,0,.55),
+      0 0 40px rgba(34,211,238,.1),
+      inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .pipe-rail.is-float {
+    border-color: rgba(34,211,238,.32);
+    box-shadow:
+      0 32px 72px rgba(0,0,0,.58),
+      0 0 48px rgba(34,211,238,.14),
+      inset 0 1px 0 rgba(255,255,255,.1);
+  }
+  .pipe-rail.is-away {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .pipe-rail .rail-k {
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .pipe-rail .rail-hint {
+    font-size: 11px; color: var(--muted); margin: 0 0 16px; letter-spacing: .02em;
+  }
+  .spine-list { list-style: none; margin: 0; padding: 0; position: relative; }
+  .spine-track, .spine-fill {
+    position: absolute; left: 15px; top: 16px; bottom: 16px; width: 1px; z-index: 0;
+    pointer-events: none;
+  }
+  .spine-track { background: var(--border2); }
+  .spine-fill {
+    background: linear-gradient(180deg, var(--accent), rgba(34,211,238,.15));
+    transform-origin: top; transform: scaleY(0);
+    box-shadow: 0 0 12px rgba(34,211,238,.4);
+    transition: transform .35s var(--ease);
+  }
+  .spine-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 6px 12px 0; position: relative; z-index: 1;
+    color: var(--muted); font-size: 15px; letter-spacing: .03em;
+    transition: color .28s, transform .28s var(--ease);
+    width: 100%; background: none; border: 0; font-family: inherit; text-align: left; cursor: pointer;
+    border-radius: 10px;
+  }
+  .spine-item:hover { color: var(--text2); transform: translateX(3px); }
+  .spine-item:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+  .spine-item .n {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid var(--border2);
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 500; font-family: var(--mono);
+    color: var(--muted);
+    background: #0c0c0f;
+    position: relative; z-index: 2;
+    isolation: isolate;
+    transition: border-color .3s, color .3s, background .3s, box-shadow .3s, transform .3s var(--ease);
+  }
+  .spine-item:hover .n { border-color: rgba(34,211,238,.5); color: var(--accent); }
+  .spine-item.on { color: #fff; }
+  .spine-item.on .n {
+    border-color: var(--accent); color: #ecfeff; background: #083344;
+    box-shadow: 0 0 0 4px rgba(34,211,238,.12), 0 0 20px rgba(34,211,238,.5);
+    animation: nodeGlow 2.4s ease-in-out infinite;
+  }
+  .spine-item.done .n {
+    border-color: var(--ok); color: var(--ok); background: #0c0c0f;
+    box-shadow: none; animation: none;
+  }
+  @keyframes nodeGlow {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(34,211,238,.12), 0 0 16px rgba(34,211,238,.42); }
+    50% { box-shadow: 0 0 0 6px rgba(34,211,238,.16), 0 0 26px rgba(34,211,238,.58); }
+  }
+  .phase {
+    min-height: 0;
+    display: flex; flex-direction: column; justify-content: flex-start;
+    padding: 0 0 28px;
+  }
+  .phase + .phase { padding-top: 10px; }
+  .phase:last-child { padding-bottom: 8px; }
+  .phase-card { padding: 26px 28px 24px; }
+  .phase-k {
+    font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--accent); font-family: var(--mono); margin-bottom: 10px;
+  }
+  .phase-card h3 {
+    font-family: var(--display); font-size: 30px; font-weight: 500;
+    letter-spacing: -.02em; margin: 0 0 12px;
+  }
+  .phase-card p { color: var(--text2); line-height: 1.65; margin: 0 0 18px; font-size: 16px; }
+  .ticket-excerpt {
+    margin: 0; padding: 16px 18px;
+    background: rgba(0,0,0,.28); border: 1px solid var(--border); border-radius: 10px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: var(--text2);
+  }
+  .ticket-excerpt .hl { color: var(--quote); }
+  .agents {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;
+  }
+  .ag {
+    padding: 14px 12px 12px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid color-mix(in srgb, var(--ag) 40%, var(--border));
+  }
+  .ag b {
+    display: block; font-size: 12px; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--ag); font-weight: 600;
+  }
+  .ag span {
+    display: block; margin-top: 5px; font-family: var(--mono);
+    font-size: 10.5px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ag {
+    cursor: pointer; text-align: left; font: inherit; color: inherit;
+    transition: transform .25s var(--ease), border-color .25s, box-shadow .25s;
+  }
+  .ag:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.28); }
+  .ag.on {
+    border-color: color-mix(in srgb, var(--ag) 70%, white);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ag) 40%, transparent), 0 12px 28px rgba(0,0,0,.3);
+  }
+  .ag em {
+    display: block; margin-top: 10px; font-style: normal;
+    font-family: var(--mono); font-size: 22px; font-weight: 300; color: var(--text);
+  }
+  .agent-detail {
+    margin-top: 16px; padding: 18px 20px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--ag, var(--accent)) 35%, var(--border));
+    background: rgba(0,0,0,.22);
+    min-height: 132px;
+  }
+  .agent-detail .ad-k {
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ag, var(--accent)); font-weight: 600; margin-bottom: 6px;
+  }
+  .agent-detail h4 { margin: 0 0 8px; font-size: 17px; }
+  .agent-detail p { margin: 0 0 10px; font-size: 14px; color: var(--text2); line-height: 1.55; }
+  .agent-detail .meta {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+  }
+  .agent-detail .meta span {
+    font-family: var(--mono); font-size: 11px; color: var(--text2);
+    border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px;
+  }
+  .agent-detail .found {
+    font-family: var(--mono); font-size: 12px; color: var(--quote);
+    line-height: 1.7; white-space: normal; overflow-wrap: anywhere;
+  }
+  .skill-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
+  .skill-pills button {
+    font: inherit; font-size: 12px; color: var(--text2);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 12px; cursor: pointer;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .skill-pills button:hover, .skill-pills button.on {
+    color: var(--accent); border-color: rgba(34,211,238,.4); background: var(--accent-dim);
+  }
+  .rule-list { margin: 14px 0 0; padding: 0; list-style: none; }
+  .rule-list li {
+    display: grid; grid-template-columns: 22px 1fr; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 14px; color: var(--text2); line-height: 1.45;
+  }
+  .rule-list li:last-child { border-bottom: 0; }
+  .rule-list i { color: var(--accent); font-style: normal; font-family: var(--mono); font-size: 12px; }
+  .replay {
+    margin-top: 12px; font: inherit; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); background: none; border: 1px solid rgba(34,211,238,.3);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer;
+  }
+  .replay:hover { background: var(--accent-dim); }
+  .trap { cursor: pointer; transition: border-color .2s, transform .25s var(--ease); }
+  .trap:hover, .trap.on { border-color: rgba(34,211,238,.35); transform: translateY(-2px); }
+  .trap .more { display: none; margin-top: 12px; font-size: 13px; color: var(--text2); line-height: 1.55; }
+  .trap.on .more { display: block; }
+  .callout, .gcheck {
+    cursor: pointer; transition: border-color .2s;
+    width: 100%; text-align: left; font: inherit; color: inherit;
+  }
+  .callout.on { border-color: rgba(34,211,238,.45); }
+  .json .lit { background: rgba(34,211,238,.12); border-radius: 3px; }
+  .map-inspect {
+    margin-top: 10px; padding: 12px 14px; min-height: 72px;
+  }
+  .map-inspect .mi-id { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+  .map-inspect .mi-why { margin: 6px 0 0; font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .mini-map .hit-node { cursor: pointer; }
+  .roster {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px; margin-top: 28px;
+  }
+  .roster button {
+    text-align: left; font: inherit; color: inherit; cursor: pointer;
+    padding: 16px 16px 14px; width: 100%;
+  }
+  .roster button:hover, .roster button.on { border-color: rgba(34,211,238,.4); }
+  .roster b { display: block; font-size: 14px; margin-bottom: 5px; }
+  .roster span { font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .roster-detail { margin-top: 14px; padding: 20px 22px; }
+  .roster-detail h4 { margin: 0 0 8px; font-family: var(--display); font-size: 22px; font-weight: 500; }
+  .roster-detail p { margin: 0 0 12px; color: var(--text2); line-height: 1.6; }
+  .gcheck { cursor: pointer; transition: border-color .2s, transform .2s var(--ease); }
+  .gcheck:hover, .gcheck.on { border-color: rgba(34,211,238,.4); transform: translateY(-2px); }
+  .gcheck .extra { display: none; margin-top: 8px; font-size: 12px; color: var(--text2); line-height: 1.45; }
+  .gcheck.on .extra { display: block; }
+  .metric-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .metric {
+    flex: 1; min-width: 140px; padding: 16px 18px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .metric b { display: block; font-family: var(--mono); font-size: 28px; font-weight: 300; color: var(--accent); }
+  .metric span { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .catch {
+    margin-top: 14px; padding: 16px 18px;
+    border: 1px solid rgba(251,113,133,.3);
+    background: rgba(251,113,133,.06);
+    border-radius: 10px;
+    box-shadow: inset 3px 0 0 var(--danger);
+  }
+  .catch .ck { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--danger); font-weight: 600; margin-bottom: 6px; }
+  .catch p { margin: 0; font-size: 14px; color: var(--text2); }
+
+  /* ------------------------------------------------------------ ledger */
+  .ledger-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 28px; align-items: start; margin-top: 36px;
+  }
+  .json {
+    margin: 0; padding: 22px 24px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.7;
+    overflow: auto; max-height: 640px;
+    color: var(--text2);
+  }
+  .json .k { color: #7dd3fc; }
+  .json .s { color: var(--quote); }
+  .json .n { color: #67e8f9; }
+  .json .mark {
+    display: inline; box-shadow: inset 0 -1px 0 rgba(34,211,238,.45);
+  }
+  .callouts { display: flex; flex-direction: column; gap: 12px; }
+  .callout {
+    padding: 14px 16px;
+  }
+  .callout b {
+    display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 6px;
+  }
+  .callout p { margin: 0; font-size: 14px; color: var(--text2); line-height: 1.55; }
+
+  /* ------------------------------------------------------------ map */
+  .map-grid {
+    display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+    gap: 36px; align-items: center; margin-top: 28px;
+  }
+  .map-legend { display: flex; flex-direction: column; gap: 18px; }
+  .map-frame {
+    aspect-ratio: 1; width: min(100%, 520px); margin: 0 auto;
+    border-radius: 50%; overflow: hidden;
+    background: radial-gradient(circle at 50% 46%, #1a3a42 0%, #12161a 50%, #0c0c10 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 20px 50px rgba(0,0,0,.4);
+  }
+  .mini-map { display: block; width: 100%; height: 100%; }
+  .mini-map .ring-guide { fill: none; stroke: #67e8f9; stroke-width: 1.2; }
+  .mini-map .spoke { stroke: rgba(103,232,249,.28); stroke-width: 1; }
+  .lg { padding: 16px 18px; }
+  .lg h4 {
+    margin: 0 0 8px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+  }
+  .lg p { margin: 0; color: var(--text2); font-size: 14px; line-height: 1.55; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; }
+  .swatches span { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text2); }
+  .swatches i { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* ------------------------------------------------------------ gate */
+  .term-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 28px;
+  }
+  .term { overflow: hidden; }
+  .term-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .term-bar i { width: 8px; height: 8px; border-radius: 50%; }
+  .term.blocked .term-bar i { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+  .term.ok .term-bar i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .term-bar .verdict { margin-left: auto; font-family: var(--mono); font-weight: 500; }
+  .term.blocked .verdict { color: var(--danger); }
+  .term.ok .verdict { color: var(--ok); }
+  .term pre {
+    margin: 0; padding: 16px 18px 20px;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
+    color: #cbd5e1; white-space: pre-wrap; max-height: 420px; overflow: auto;
+  }
+  .term.blocked pre .hit { color: var(--danger); }
+  .term.ok pre .hit { color: var(--ok); }
+  .gate-checks {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px; margin-top: 18px;
+  }
+  .gcheck { padding: 14px 14px 12px; }
+  .gcheck b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .gcheck span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .exit-line {
+    margin: 22px 0 0;
+    font-family: var(--display); font-size: 22px; font-style: italic;
+    color: var(--text); letter-spacing: -.02em;
+  }
+  .exit-line em { color: var(--accent); font-style: italic; }
+
+  /* ------------------------------------------------------------ trust */
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 14px; margin-top: 32px;
+  }
+  .stat {
+    padding: 22px 20px 18px;
+    background:
+      radial-gradient(280px 140px at 16% 0%, rgba(34,211,238,.06) 0%, transparent 62%),
+      linear-gradient(180deg, #1a1a1f, var(--surface));
+    border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    transition: border-color .2s;
+  }
+  .stat:hover { border-color: rgba(34,211,238,.32); }
+  .stat .num {
+    font-family: var(--mono); font-size: 36px; font-weight: 300; line-height: 1; color: var(--accent);
+  }
+  .stat .num small { font-size: 16px; color: var(--muted); }
+  .stat .lbl { margin-top: 10px; font-size: 13px; color: var(--text2); line-height: 1.4; }
+  .bars { margin-top: 28px; padding: 22px 24px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; font-size: 14px; margin-top: 12px; }
+  .bar-row .name { width: 120px; color: var(--text2); }
+  .bar-row .val { font-family: var(--mono); font-size: 13px; color: var(--text2); width: 52px; text-align: right; }
+  .bar-track {
+    flex: 1; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.45);
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px; width: 0;
+    background-image: linear-gradient(180deg, rgba(255,255,255,.22), transparent 60%);
+    transition: width 1.1s var(--ease);
+  }
+  .bars .sub { font-size: 13px; color: var(--muted); margin-top: 14px; line-height: 1.6; }
+  .bars .sub code { font-family: var(--mono); color: var(--text2); font-size: 12px; }
+
+  /* ------------------------------------------------------------ receipts */
+  .feat-grid {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px; margin-top: 28px;
+  }
+  .feat { padding: 16px 16px 14px; }
+  .feat b { display: block; font-size: 14px; margin-bottom: 6px; }
+  .feat span { font-size: 13px; color: var(--muted); line-height: 1.45; }
+  .coins { margin-top: 22px; overflow: hidden; }
+  .coins table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .coins th, .coins td { padding: 11px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .coins th { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .coins td.mono { font-family: var(--mono); font-size: 13px; }
+  .coins tr.total td { color: var(--accent); font-weight: 600; border-bottom: 0; }
+  .sessions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .sessions span, .sessions a {
+    font-family: var(--mono); font-size: 12px; color: var(--text2);
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+    background: rgba(0,0,0,.2);
+    text-decoration: none;
+  }
+  .sessions a:hover { color: var(--accent); border-color: rgba(34,211,238,.4); }
+  .honest {
+    margin-top: 20px; padding: 16px 18px;
+    border: 1px solid rgba(251,191,36,.28);
+    background: rgba(251,191,36,.06);
+    border-radius: 12px;
+    font-size: 14px; color: var(--text2); line-height: 1.6;
+  }
+  .honest b { color: var(--warn); }
+  .frame-line {
+    margin: 28px 0 0;
+    font-family: var(--display); font-size: 24px; font-style: italic;
+    letter-spacing: -.02em;
+  }
+  .frame-line em { color: var(--accent); }
+
+  /* ------------------------------------------------------------ finale */
+  .finale {
+    text-align: center; padding: 140px 0 80px;
+  }
+  .finale h2 {
+    font-family: var(--display);
+    font-size: clamp(34px, 4.4vw, 56px);
+    font-weight: 500; letter-spacing: -.03em; line-height: 1.15; margin: 0 0 36px;
+  }
+  .finale h2 em { color: var(--accent); font-style: italic; }
+  .ctas { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center;
+    background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 7px; padding: 12px 20px; font-size: 15px;
+    font-family: inherit; text-decoration: none;
+    transition: border-color .15s, transform .1s, box-shadow .2s;
+  }
+  .btn:hover { border-color: var(--muted); transform: translateY(-1px); }
+  .btn.primary {
+    background: linear-gradient(180deg, #0891b2, #0e7490);
+    border-color: #0e7490; color: #eefdff; font-weight: 500;
+    box-shadow: 0 6px 18px rgba(8,145,178,.22);
+  }
+  .btn.primary:hover {
+    background: linear-gradient(180deg, #06b6d4, #0891b2);
+    border-color: #0891b2;
+    box-shadow: 0 8px 24px rgba(8,145,178,.32);
+  }
+  footer {
+    padding: 0 0 40px;
+    color: var(--muted); font-size: 14px;
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer .mono { font-family: var(--mono); font-size: 11px; }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    body::after { animation: none; }
+    .hero-rings i { animation: none; }
+    [data-reveal] { opacity: 1; transform: none; transition: none; }
+    .spine-fill { transition: none; }
+    .spine-item.on .n { animation: none; }
+    .pipe-rail { animation: none; }
+    .bar-fill { transition: none; }
+    .cell { transition: none; }
+  }
+
+  @media (max-width: 980px) {
+    .fear-grid, .ledger-grid, .map-grid, .term-grid, .pipe-wrap { grid-template-columns: 1fr; }
+    .pipe-slot, .pipe-rail, .pipe-cards { grid-column: auto; }
+    .pipe-slot { min-height: 0; }
+    .pipe-slot, .pipe-rail, .pipe-rail.is-float { position: static; left: auto; width: auto; animation: none; }
+    .sec-dock { display: none; }
+    .traps-grid, .feat-grid, .stats, .gate-checks, .agents, .roster { grid-template-columns: 1fr 1fr; }
+    .hero h1 span { white-space: normal; }
+    .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .phase { min-height: 0; padding: 12px 0 36px; }
+  }
+  @media (max-width: 640px) {
+    .shell, .shell-wide { padding: 0 20px; }
+    .traps-grid, .feat-grid, .stats, .gate-checks, .agents, .roster { grid-template-columns: 1fr; }
+    .header-in { height: 64px; gap: 14px; }
+    .wordmark .role { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="shell header-in">
+    <a class="wordmark" href="index.html">
+      <div class="name">Ripple<span>Guard</span></div>
+      <div class="role">how it works</div>
+    </a>
+    <a class="back-link" href="index.html"><em>←</em> Back to the gate</a>
+    <a class="back-link" href="bob-sessions.html">The sessions</a>
+    <a class="back-link" href="presentation.html">Pitch</a>
+    <a class="back-link" href="https://github.com/DaniyalAfzaal/RippleGuard" target="_blank" rel="noopener">GitHub ↗</a>
+    <div class="header-end">
+      <span class="real-badge" title="This page is built from Bob's real CHG-1042 run">REAL</span>
+    </div>
+  </div>
+  <div class="progress" id="progress"></div>
+</header>
+<nav class="sec-dock" id="sec-dock" aria-label="Page sections"></nav>
+
+<section class="hero">
+  <div class="hero-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="shell hero-copy">
+    <p class="kicker">How it works</p>
+    <h1>
+      <span>No legacy change</span>
+      <span class="pay">ships unproven.</span>
+    </h1>
+    <p class="lede">RippleGuard maps every artifact a ticket touches. A deterministic gate — zero AI tokens — refuses the release until each ripple is proven or waived. The page below is not a diagram of the idea. It is the run.</p>
+    <nav class="chips" aria-label="Sections">
+      <a class="chip" href="#fear"><b>01</b>The fear</a>
+      <a class="chip" href="#traps"><b>02</b>Three traps</a>
+      <a class="chip" href="#pipeline"><b>03</b>Pipeline</a>
+      <a class="chip" href="#ledger"><b>04</b>A ripple</a>
+      <a class="chip" href="#map"><b>05</b>The map</a>
+      <a class="chip" href="#gate"><b>06</b>The gate</a>
+      <a class="chip" href="#trust"><b>07</b>Trust</a>
+      <a class="chip" href="#receipts"><b>08</b>Receipts</a>
+    </nav>
+  </div>
+</section>
+
+<section class="block" id="fear">
+  <div class="shell fear-grid">
+    <div data-reveal>
+      <p class="kicker">The fear</p>
+      <p class="pull">Developers don't fear changing one line. They fear the <em>1998 batch job</em> that still reads <span class="keep">bytes 1 through 9.</span></p>
+      <p class="lede">CHG-1042 expands <code style="font-family:var(--mono);color:var(--text)">CUSTOMER_ID</code> from CHAR(9) to CHAR(12). In a fixed-width extract every field after the key shifts three bytes. A job that still slices the old window does not throw. It bills the wrong account.</p>
+    </div>
+    <div class="panel bytes" id="bytes" data-reveal>
+      <div class="bytes-head">
+        <span>CUSMAS extract · fixed width</span>
+        <span>silent +3 shift</span>
+      </div>
+      <div class="bytes-row before">
+        <div class="bytes-meta"><span>Before · record_length 40</span><span>key 0–8 · credit 32–39</span></div>
+        <div class="cells" aria-hidden="true">
+          <div class="cell id">A</div><div class="cell id">B</div><div class="cell id">C</div>
+          <div class="cell id">1</div><div class="cell id">0</div><div class="cell id">0</div>
+          <div class="cell id">0</div><div class="cell id">0</div><div class="cell id">1</div>
+          <div class="cell ghost">X</div><div class="cell ghost">Y</div><div class="cell ghost">Z</div>
+          <div class="cell name">N</div><div class="cell name">A</div><div class="cell name">M</div>
+          <div class="cell amt">0</div><div class="cell amt">5</div><div class="cell amt">0</div><div class="cell amt">0</div>
+        </div>
+      </div>
+      <div class="bytes-row after">
+        <div class="bytes-meta"><span>After · record_length 43</span><span>old reader still uses 0–8 and 32–40</span></div>
+        <div class="cells" aria-hidden="true">
+          <div class="cell id">A</div><div class="cell id">B</div><div class="cell id">C</div>
+          <div class="cell id">1</div><div class="cell id">0</div><div class="cell id">0</div>
+          <div class="cell id">0</div><div class="cell id">0</div><div class="cell id">1</div>
+          <div class="cell ghost">X</div><div class="cell ghost">Y</div><div class="cell ghost">Z</div>
+          <div class="cell name">N</div><div class="cell name">A</div><div class="cell name corrupt">M</div>
+          <div class="cell amt corrupt">0</div><div class="cell amt corrupt">5</div><div class="cell amt corrupt">0</div><div class="cell amt">0</div>
+        </div>
+      </div>
+      <p class="bytes-note">Nightly billing read <code>line.substring(0, 9)</code> and <code>substring(32, 40)</code>. After the key grows, those windows truncate the id and swallow three bytes of name into the credit field. No exception. Wrong money.</p>
+      <button type="button" class="replay" id="replay-shift">Replay the shift</button>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="traps">
+  <div class="shell">
+    <p class="kicker" data-reveal>What grep cannot find</p>
+    <h2 class="sec-h" data-reveal>Three traps with no field name in the source.</h2>
+    <p class="lede" data-reveal>A literal search for <code style="font-family:var(--mono);color:var(--text)">CUSTOMER_ID</code> covers 12 of 15 known-impacted artifacts. The three it misses are the ones that silently corrupt production.</p>
+    <div class="traps-grid">
+      <article class="panel trap" data-reveal>
+        <div class="trap-k">Trap 01 · alias</div>
+        <h3>A drift-copy constant</h3>
+        <p class="why">The order service never writes the field name. It keeps a local <em style="font-style:normal;color:var(--text)">CUSID_LEN = 9</em> and pads every lookup to that width. Grep for the column never lands here.</p>
+        <pre>const CUSID_LEN = 9;
+const key = String(custNo)
+  .padEnd(CUSID_LEN, ' ')
+  .slice(0, CUSID_LEN).trim();</pre>
+        <div class="file">src/orders/orderService.js · ledger SVC_ORDER_SERVICE</div>
+        <p class="more">code-explorer hunts drift-copies and aliases (CUSID, custNo, acct). Skill: <b style="color:var(--text);font-weight:500">rippleguard-analyze</b>. Persona file: <span style="font-family:var(--mono);color:var(--accent)">.bob/agents/code-explorer.md</span>. Tools: Read only.</p>
+      </article>
+      <article class="panel trap d1" data-reveal>
+        <div class="trap-k">Trap 02 · anonymous offsets</div>
+        <h3>Bytes, not names</h3>
+        <p class="why">The 02:00 billing job slices CUSMAS and ORDMAS by raw positions. The ops runbook said those offsets were hand-maintained — and that there was no length assertion in the job.</p>
+        <pre>const acct = line.substring(0, 9);
+const amt  = Number(line.substring(16, 25)) / 100;
+const stat = line.substring(25, 26);</pre>
+        <div class="file">batch/nightly_billing.js:30 · OPS-311</div>
+        <p class="more">batch-explorer is the persona that finds nameless offsets. It also reads <span style="font-family:var(--mono)">docs/ops/BILLING-RUNBOOK.md</span> — the runbook named the job when the source did not. Skill: <b style="color:var(--text);font-weight:500">rippleguard-analyze</b>.</p>
+      </article>
+      <article class="panel trap d2" data-reveal>
+        <div class="trap-k">Trap 03 · partner contract</div>
+        <h3>A spec named CUST_KEY</h3>
+        <p class="why">The 3PL feed encodes the customer key as <em style="font-style:normal;color:var(--text)">CUST_KEY</em>, width 9, record_length 40. Updating the config without a V2 bump would shift every field partners parse.</p>
+        <pre>{ "name": "CUST_KEY",
+  "offset": 0,
+  "width": 9,
+  "pad": " " }</pre>
+        <div class="file">config/feed-layout.json · PARTNER-DAILY-V1</div>
+        <p class="more">Same batch-explorer pass. Config and ops docs are in its search path. A grep for CUSTOMER_ID never opens a file that only says CUST_KEY.</p>
+      </article>
+    </div>
+    <div class="panel grep-strip" data-reveal>
+      <div class="cmd">$ grep CUSTOMER_ID  <b>→ 12/15</b></div>
+      <div class="miss">Misses <em>orderService.js</em> · <em>nightly_billing.js</em> · <em>feed-layout.json</em>. RippleGuard found all three, plus the two data extracts — 17 ripples on the live run.</div>
+    </div>
+  </div>
+</section>
+
+<section class="pipeline" id="pipeline">
+  <div class="shell-wide pipe-wrap">
+    <div class="pipe-slot">
+    <aside class="pipe-rail" id="pipe-rail" aria-label="Pipeline phases">
+      <div class="rail-k">Five phases</div>
+      <p class="rail-hint">Click a phase to jump</p>
+      <div class="spine-list">
+        <div class="spine-track"></div>
+        <div class="spine-fill" id="spine-fill"></div>
+        <button type="button" class="spine-item on" data-phase="0" aria-current="step"><span class="n">1</span>Ticket</button>
+        <button type="button" class="spine-item" data-phase="1"><span class="n">2</span>Map</button>
+        <button type="button" class="spine-item" data-phase="2"><span class="n">3</span>Implement</button>
+        <button type="button" class="spine-item" data-phase="3"><span class="n">4</span>Verify</button>
+        <button type="button" class="spine-item" data-phase="4"><span class="n">5</span>Gate</button>
+      </div>
+    </aside>
+    </div>
+    <div class="pipe-cards">
+      <article class="phase" data-phase="0" id="phase-ticket">
+        <div class="panel phase-card">
+          <div class="phase-k">Phase 01 · skill rippleguard-analyze · step 1</div>
+          <h3>Read the change ticket. Not the summary — the PDF.</h3>
+          <p>The analyze skill starts here. Bob opens <span style="font-family:var(--mono);color:var(--text)">tickets/CHG-1042-customer-id-expansion.pdf</span> with document understanding — not a chat paraphrase. It extracts ticket id, every requirement, every acceptance criterion, and the Finance Ops constraint. Only then do explorers spawn.</p>
+          <pre class="ticket-excerpt"><span class="hl">Ticket     CHG-1042 · Priority High · OrderCore</span>
+R1  Expand CUSTOMER_ID CHAR(9) → CHAR(12)
+    format AAA999999999 · both lengths valid in transition
+R2  GET /orders/{orderNo}/status
+AC3 <span class="hl">NO consumer truncates a 12-character customer id.
+    This includes positional / offset-based consumers.</span>
+    Batch changes require Finance Ops sign-off.</pre>
+        </div>
+      </article>
+      <article class="phase" data-phase="1" id="phase-map">
+        <div class="panel phase-card">
+          <div class="phase-k">Phase 02 · skill rippleguard-analyze · step 2</div>
+          <h3>Five personas, five isolated windows.</h3>
+          <p>Analyze fans out read-only explore subagents. Each persona lives in <span style="font-family:var(--mono);color:var(--text)">.bob/agents/</span>, tools: Read only. They return <span style="font-family:var(--mono);color:var(--text)">{ path, line, quote, why, risk }</span>. Click an agent to see what it hunts and what it found on the live run. Run 1 was 14/15. Personas were tightened. Run 2 landed 15/15 plus two data extracts — 17 ripples.</p>
+          <div class="agents" id="agent-roster"></div>
+          <div class="agent-detail" id="agent-detail"></div>
+        </div>
+      </article>
+      <article class="phase" data-phase="2" id="phase-implement">
+        <div class="panel phase-card">
+          <div class="phase-k">Phase 03 · skill rippleguard-implement</div>
+          <h3>Change only what the ledger named.</h3>
+          <p><span style="font-family:var(--mono);color:var(--text)">.bob/skills/rippleguard-implement/SKILL.md</span> is the single scope contract. The ledger is the source of truth. Out-of-scope entries stay <span style="font-family:var(--mono);color:var(--text)">open</span>. Status moves open → changed → tested only after a proving test. DDL and docs may be waived with an honest reason. The skill must not edit the gate or <span style="font-family:var(--mono);color:var(--text)">bob_sessions/</span>.</p>
+          <div class="skill-pills" id="impl-pills">
+            <button type="button" class="on" data-impl="in">In scope</button>
+            <button type="button" data-impl="held">Held for Finance Ops</button>
+            <button type="button" data-impl="rules">Skill rules</button>
+          </div>
+          <div id="impl-panel"></div>
+          <div class="metric-row" style="margin-top:16px">
+            <div class="metric"><b>7</b><span>Baseline tests</span></div>
+            <div class="metric"><b>17</b><span>Tests after scoped implement</span></div>
+            <div class="metric"><b>34</b><span>Tests at strict ship</span></div>
+          </div>
+        </div>
+      </article>
+      <article class="phase" data-phase="3" id="phase-verify">
+        <div class="panel phase-card">
+          <div class="phase-k">Phase 04 · skill rippleguard-verify · persona verifier</div>
+          <h3>The verifier may only downgrade.</h3>
+          <p><span style="font-family:var(--mono);color:var(--text)">rippleguard-verify</span> is adversarial. It re-derives the blast radius from the PDF with fresh explorers plus the <span style="font-family:var(--mono);color:var(--text)">verifier</span> persona (<span style="font-family:var(--mono);color:var(--text)">.bob/agents/verifier.md</span>). It may write only the ledger (downgrade) and <span style="font-family:var(--mono);color:var(--text)">artifacts/verify-report.md</span>. It never implements. It never upgrades a status.</p>
+          <ul class="rule-list">
+            <li><i>01</i><span>Re-search from scratch. Do not start from the ledger; compare after.</span></li>
+            <li><i>02</i><span>A “tested” artifact needs a test that exercises the <em style="font-style:normal;color:var(--text)">new</em> 12-character behavior end to end.</span></li>
+            <li><i>03</i><span>Hunt silent truncation: substring, slice, pad-and-cut, contractual widths.</span></li>
+            <li><i>04</i><span>Run the gate --strict and nightly_billing.js read-only. Report the verdict verbatim.</span></li>
+          </ul>
+          <div class="catch">
+            <div class="ck">Real catch · SVC_CUSTOMER_SERVICE</div>
+            <p>Task 3 found customer service marked tested while the file was identical to the pre-change baseline. The referenced route test still used 9-character ids. Status went back to open. The gate stayed blocked — on purpose.</p>
+          </div>
+        </div>
+      </article>
+      <article class="phase" data-phase="4" id="phase-gate">
+        <div class="panel phase-card">
+          <div class="phase-k">Phase 05 · scripts/ripple-gate.js · zero AI</div>
+          <h3>Zero tokens. Exit code 1 or 0.</h3>
+          <p>The <span style="font-family:var(--mono);color:var(--text)">rippleguard</span> command’s last phase is not a skill. It is Node. The gate reads the ledger, diffs every path against the baseline manifest, runs the suite, and audits quotes with <span style="font-family:var(--mono);color:var(--text)">verify-evidence.js</span>. Project rule: report the verdict verbatim. If it blocks, the release is blocked.</p>
+          <div class="metric-row">
+            <div class="metric"><b>17</b><span>Ripples in the ledger</span></div>
+            <div class="metric"><b>0</b><span>Open at ship</span></div>
+            <div class="metric"><b>0</b><span>AI tokens in the gate</span></div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="block center-sec" id="ledger">
+  <div class="shell">
+    <p class="kicker" data-reveal>Anatomy of a ripple</p>
+    <h2 class="sec-h" data-reveal>Every entry is evidence, not a vibe.</h2>
+    <p class="lede" data-reveal>This is the live ledger object for the billing job — the grep miss that would have corrupted finance. Id, path, why, line-level quotes, risk, and a status the gate can hash-check.</p>
+    <div class="ledger-grid">
+      <pre class="panel json" data-reveal>{
+  <span class="k mark" data-tip="id">"id"</span>: <span class="s">"BATCH_NIGHTLY_BILLING"</span>,
+  <span class="k mark" data-tip="path">"path"</span>: <span class="s">"fixtures/order-app/batch/nightly_billing.js"</span>,
+  <span class="k mark" data-tip="why">"why"</span>: <span class="s">"Reads CUSMAS and ORDMAS by raw positional offsets (not via recordLayouts.js); hardcodes substring(0,9), substring(7,16), substring(32,40), padEnd(9) — every offset is wrong after the key expands by 3 bytes, and the billing output will silently corrupt finance data with no runtime error (see runbook OPS-311)"</span>,
+  <span class="k">"domain"</span>: <span class="s">"batch"</span>,
+  <span class="k mark" data-tip="risk">"risk"</span>: <span class="s">"high"</span>,
+  <span class="k mark" data-tip="status">"status"</span>: <span class="s">"tested"</span>,
+  <span class="k mark" data-tip="evidence">"evidence"</span>: [
+    { <span class="k">"file"</span>: <span class="s">"…/nightly_billing.js"</span>, <span class="k">"line"</span>: <span class="n">30</span>,
+      <span class="k">"quote"</span>: <span class="s">"    const acct = line.substring(0, 9);"</span> },
+    { <span class="k">"file"</span>: <span class="s">"…/nightly_billing.js"</span>, <span class="k">"line"</span>: <span class="n">40</span>,
+      <span class="k">"quote"</span>: <span class="s">"    const amt = Number(line.substring(16, 25)) / 100;"</span> },
+    { <span class="k">"file"</span>: <span class="s">"…/nightly_billing.js"</span>, <span class="k">"line"</span>: <span class="n">36</span>,
+      <span class="k">"quote"</span>: <span class="s">"    const stat = line.substring(25, 26);"</span> }
+  ],
+  <span class="k">"test"</span>: <span class="s">"fixtures/order-app/tests/billing.test.js"</span>
+}</pre>
+      <div class="callouts">
+        <button type="button" class="panel callout" data-reveal data-lit="id"><b>id</b><p>Stable handle the gate prints on failure. Not a file path — a blast-radius identity.</p></button>
+        <button type="button" class="panel callout d1" data-reveal data-lit="path,why"><b>path + why</b><p>One sentence a reviewer can argue with. If the why is vague, the ripple is not proven.</p></button>
+        <button type="button" class="panel callout d2" data-reveal data-lit="evidence"><b>evidence</b><p>One physical source line, copied verbatim. <span style="font-family:var(--mono);font-size:12px">verify-evidence.js</span> rejects wrapped or paraphrased quotes. Live audit: 59/60.</p></button>
+        <button type="button" class="panel callout d3" data-reveal data-lit="risk,status"><b>risk · status · waiver</b><p>Risk places the node on an orbit. Status is <span style="font-family:var(--mono);font-size:12px">open | changed | tested | waived</span>. Waivers need a reason the gate logs. Tested files must differ from the baseline hash — or the verifier opens them again.</p></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="map">
+  <div class="shell">
+    <p class="kicker" data-reveal>Reading the blast radius</p>
+    <h2 class="sec-h" data-reveal>Seventeen nodes. One ticket at the core.</h2>
+    <p class="lede" data-reveal>The map on the verdict page is this same geometry, drawn from <span style="font-family:var(--mono);color:var(--text)">window.RIPPLE_LIVE</span> — Bob's real 17-ripple ledger (15 known-impacted artifacts plus the two data extracts), not illustration data.</p>
+    <div class="map-grid">
+      <div class="map-frame" data-reveal>
+        <svg class="mini-map" id="mini-map" viewBox="0 0 520 520" role="img" aria-label="Blast radius of CHG-1042"></svg>
+      </div>
+      <div class="map-legend">
+        <div class="panel lg" data-reveal>
+          <h4>Rings — risk</h4>
+          <p>Inner orbit is highest risk. High sits closest to the ticket. Medium and low step outward. Distance is severity, not importance.</p>
+        </div>
+        <div class="panel lg d1" data-reveal>
+          <h4>Arcs — domains</h4>
+          <p>Each sector is a domain: database, code, batch, api, test, config, docs. Color is categorical. Status never borrows those hues.</p>
+          <div class="swatches" id="domain-swatches"></div>
+        </div>
+        <div class="panel lg d2" data-reveal>
+          <h4>Nodes — glyphs</h4>
+          <p>Click a node on the map. ✓ proven · ✕ open · – waived. Spokes run from the CHG-1042 core.</p>
+          <div class="swatches">
+            <span><i style="background:#34d399"></i>tested</span>
+            <span><i style="background:#fb7185"></i>open</span>
+            <span><i style="background:#71717a"></i>waived</span>
+            <span><i style="background:#fbbf24"></i>changed</span>
+          </div>
+          <div class="panel map-inspect" id="map-inspect">
+            <div class="mi-id">Click a ripple</div>
+            <p class="mi-why">Seventeen ripples from Bob’s live ledger — 15 seeded plus customers.dat and orders.dat. The inspect panel names the one you select.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="gate">
+  <div class="shell">
+    <p class="kicker" data-reveal>The gate that cannot be sweet-talked</p>
+    <h2 class="sec-h" data-reveal>Same binary. Two real transcripts.</h2>
+    <p class="lede" data-reveal>Left is the example ledger with nightly billing still open. Right is the live strict run after every ripple was tested or waived. Both are the output of <span style="font-family:var(--mono);color:var(--text)">node scripts/ripple-gate.js --strict</span>.</p>
+    <div class="term-grid">
+      <div class="panel term blocked" data-reveal>
+        <div class="term-bar"><i></i> example ledger · --strict<span class="verdict">RELEASE BLOCKED</span></div>
+        <pre>
+================ RippleGuard Gate ================
+Ticket:   CHG-1042 — Expand CUSTOMER_ID CHAR(9) -&gt; CHAR(12)
+Ledger:   artifacts/impact-ledger.example.json
+Ripples:  15 total | tested 10 | waived 4 | changed 0 | open 1
+Recall:   ledger covers 15/15 (grep baseline: 12/15)
+Tests:    pass (34 passed, 0 failed)
+Failures:
+  - UNRESOLVED RIPPLE: NIGHTLY_BILLING is "open"
+    Hardcoded positional offsets substring(0,9)…
+
+  <span class="hit">RELEASE BLOCKED</span>
+==================================================</pre>
+      </div>
+      <div class="panel term ok d1" data-reveal>
+        <div class="term-bar"><i></i> live Bob run · --strict<span class="verdict">RELEASE APPROVED</span></div>
+        <pre>
+================ RippleGuard Gate ================
+Ticket:   CHG-1042 — Expand CUSTOMER_ID CHAR(9) to CHAR(12)
+Ledger:   artifacts/impact-ledger.json
+Ripples:  17 total | tested 12 | waived 5 | changed 0 | open 0
+Recall:   ledger covers 15/15 (grep baseline: 12/15)
+Tests:    pass (34 passed, 0 failed)
+Evidence: 59/60 quotes verified verbatim
+
+  <span class="hit">RELEASE APPROVED</span>
+==================================================</pre>
+      </div>
+    </div>
+    <div class="gate-checks">
+      <button type="button" class="panel gcheck" data-reveal><b>Statuses</b><span>Every ripple tested or waived. Open or changed fails the process.</span><div class="extra">The gate tallies open + changed. One unresolved ripple is enough for exit 1.</div></button>
+      <button type="button" class="panel gcheck d1" data-reveal><b>Baseline hashes</b><span>A "tested" file identical to the pre-change snapshot is a lie.</span><div class="extra">--strict compares each path to baseline-manifest.json. Unchanged + tested = fail.</div></button>
+      <button type="button" class="panel gcheck d2" data-reveal><b>Test suite</b><span>npm test must be green. Counts are printed on the certificate.</span><div class="extra">Live ship: 34 passed, 0 failed. The count is mechanical, not narrated.</div></button>
+      <button type="button" class="panel gcheck d3" data-reveal><b>Evidence audit</b><span>Each quote must match one physical source line.</span><div class="extra">verify-evidence.js is character-for-character. 59/60 on the live run.</div></button>
+      <button type="button" class="panel gcheck" data-reveal><b>Recall</b><span>Ledger coverage of the seeded ground truth, next to grep.</span><div class="extra">15/15 known-impacted. Grep: 12/15. Two extra extracts are legitimate, not padding.</div></button>
+    </div>
+    <p class="exit-line" data-reveal>Exit code 1. <em>No AI can talk its way past it.</em></p>
+  </div>
+</section>
+
+<section class="block center-sec" id="trust">
+  <div class="shell">
+    <p class="kicker" data-reveal>Trust, verified</p>
+    <h2 class="sec-h" data-reveal>Numbers this repo can reproduce.</h2>
+    <p class="lede" data-reveal>Both numbers are real. The live ledger has <b style="color:var(--text);font-weight:500">17 ripples</b>. Recall is scored on the <b style="color:var(--text);font-weight:500">15</b> seeded known-impacted artifacts. The extra two are <span style="font-family:var(--mono);color:var(--text)">customers.dat</span> and <span style="font-family:var(--mono);color:var(--text)">orders.dat</span>. Judges can re-run the gate.</p>
+    <div class="stats" id="trust-stats">
+      <div class="stat" data-reveal>
+        <div class="num"><span data-count="17">0</span></div>
+        <div class="lbl">Ripples in the live ledger — 15 known-impacted + 2 extracts</div>
+      </div>
+      <div class="stat d1" data-reveal>
+        <div class="num"><span data-count="15">0</span><small>/15</small></div>
+        <div class="lbl">Known-impacted artifacts found — 100% recall</div>
+      </div>
+      <div class="stat d2" data-reveal>
+        <div class="num" style="color:var(--warn)"><span data-count="12">0</span><small>/15</small></div>
+        <div class="lbl">Literal grep for CUSTOMER_ID — the three traps missed</div>
+      </div>
+      <div class="stat d3" data-reveal>
+        <div class="num" style="color:var(--warn)"><span data-count="59">0</span><small>/60</small></div>
+        <div class="lbl">Evidence quotes verified — auditor caught one truncated cite</div>
+      </div>
+      <div class="stat" data-reveal>
+        <div class="num" style="color:var(--ok)"><span data-count="34">0</span><small>/34</small></div>
+        <div class="lbl">Tests passing at the strict ship gate</div>
+      </div>
+    </div>
+    <div class="panel bars" data-reveal id="trust-bars">
+      <div class="bar-row">
+        <div class="name">grep</div>
+        <div class="bar-track"><div class="bar-fill" data-w="80" style="background-color:var(--warn)"></div></div>
+        <div class="val">12/15</div>
+      </div>
+      <div class="bar-row">
+        <div class="name">RippleGuard</div>
+        <div class="bar-track"><div class="bar-fill" data-w="100" style="background-color:var(--accent)"></div></div>
+        <div class="val">15/15</div>
+      </div>
+      <p class="sub">Recall is 15/15 on the seeded ground truth — not 17/17. The ledger is larger because Bob also named the two data extracts. <code>scripts/verify-evidence.js</code> opens each evidence quote and asserts it is a contiguous substring of that file at that line. Paraphrase fails. Wrapped lines fail. Live audit: 59/60; one template-literal cite was truncated. Hash-verified file changes sit beside this audit on the certificate.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block center-sec" id="receipts">
+  <div class="shell">
+    <p class="kicker" data-reveal>Built with IBM Bob</p>
+    <h2 class="sec-h" data-reveal>The receipts.</h2>
+    <p class="lede" data-reveal>Analysis, implementation, and verification ran as Bob skills against a clean sandbox. The gate is ordinary Node. AI found the ripples. AI never got to vouch for itself.</p>
+    <div class="roster" id="bob-roster"></div>
+    <div class="panel roster-detail" id="bob-detail" data-reveal></div>
+    <div class="panel coins" data-reveal>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>Phase</th><th>Cap</th><th>Spent</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1a</td><td>Analyze (run 1)</td><td class="mono">8</td><td class="mono">4.77</td></tr>
+          <tr><td>1b</td><td>Analyze (run 2)</td><td class="mono">8</td><td class="mono">4.75</td></tr>
+          <tr><td>2</td><td>Implement (scoped)</td><td class="mono">10</td><td class="mono">11.18</td></tr>
+          <tr><td>3</td><td>Verify</td><td class="mono">5</td><td class="mono">9.44</td></tr>
+          <tr><td>4</td><td>Fix + green ship</td><td class="mono">8</td><td class="mono">9.55</td></tr>
+          <tr class="total"><td>—</td><td>40-coin allotment</td><td class="mono">40</td><td class="mono">39.69</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sessions" data-reveal>
+      <a href="bob-sessions.html#s-1a">01-analyze-run1</a>
+      <a href="bob-sessions.html#s-1b">01-analyze-run2</a>
+      <a href="bob-sessions.html#s-2">02-implement</a>
+      <a href="bob-sessions.html#s-3">03-verify</a>
+      <a href="bob-sessions.html#s-4">04-fix-ship</a>
+    </div>
+    <div class="honest" data-reveal>
+      <b>Manual finish, disclosed.</b> Task 4 hit the 40-coin ceiling after the product implementation was complete. Four Windows <span style="font-family:var(--mono);font-size:12px">execSync</span> guard assertions and ledger bookkeeping were finished by hand. No product source was written outside Bob. Final state: 17 ripples, 34/34 tests, strict <span style="font-family:var(--mono);font-size:12px">RELEASE APPROVED</span>, recall 15/15, evidence 59/60.
+    </div>
+    <p class="frame-line" data-reveal>AI found the ripples. <em>AI never got to vouch for itself.</em></p>
+  </div>
+</section>
+
+<section class="finale" id="finale">
+  <div class="shell">
+    <h2 data-reveal>Every legacy change creates a ripple.<br><em>RippleGuard proves it's safe.</em></h2>
+    <div class="ctas" data-reveal>
+      <a class="btn primary" href="index.html">Open the live verdict</a>
+      <a class="btn" href="../artifacts/certificate.html" target="_blank" rel="noopener">View the Impact Certificate ↗</a>
+    </div>
+  </div>
+</section>
+
+<footer class="shell">
+  <a href="index.html">Release gate</a>
+  <a href="bob-sessions.html">The sessions</a>
+  <a href="presentation.html">Pitch</a>
+  <a href="https://github.com/DaniyalAfzaal/RippleGuard" target="_blank" rel="noopener">GitHub ↗</a>
+  <a href="../artifacts/certificate.html">Impact certificate</a>
+  <span class="mono">CHG-1042 · 17 ripples · 39.69 / 40 Bobcoins</span>
+  <span style="margin-left:auto">Analysis, implementation and verification by IBM Bob — evidence in <span class="mono">bob_sessions/</span></span>
+</footer>
+
+<script src="gate-state.live.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const progress = document.getElementById('progress');
+  const bytes = document.getElementById('bytes');
+  const spineFill = document.getElementById('spine-fill');
+  const spineItems = [...document.querySelectorAll('.spine-item')];
+  const phases = [...document.querySelectorAll('.phase')];
+  const pipeRail = document.getElementById('pipe-rail');
+  const pipeline = document.getElementById('pipeline');
+  const barsBox = document.getElementById('trust-bars');
+  let barsLit = false;
+  let counted = false;
+  let lockPhase = -1;
+  let lockUntil = 0;
+
+  const SECTIONS = [
+    ['fear', 'Fear'], ['traps', 'Traps'], ['pipeline', 'Pipeline'],
+    ['ledger', 'Ripple'], ['map', 'Map'], ['gate', 'Gate'],
+    ['trust', 'Trust'], ['receipts', 'Receipts'],
+  ];
+  function headerHeight() {
+    const header = document.querySelector('header');
+    return header ? header.getBoundingClientRect().height : 72;
+  }
+
+  function scrollToSection(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (pipeRail && id !== 'pipeline') pipeRail.classList.add('is-away');
+    const scroller = document.scrollingElement || document.documentElement;
+    const top = Math.max(0, Math.round(scroller.scrollTop + el.getBoundingClientRect().top - headerHeight()));
+    if (reduce) scroller.scrollTop = top;
+    else scroller.scrollTo({ top: top, behavior: 'smooth' });
+  }
+
+  const dock = document.getElementById('sec-dock');
+  if (dock) {
+    dock.innerHTML = SECTIONS.map(([id, lab], i) =>
+      '<button type="button" data-sec="' + id + '"' + (i === 0 ? ' class="on"' : '') + '><i></i><span class="lab">' + lab + '</span></button>'
+    ).join('');
+    dock.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => scrollToSection(btn.getAttribute('data-sec')));
+    });
+  }
+  document.querySelectorAll('.chips a[href^="#"]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      const id = (a.getAttribute('href') || '').slice(1);
+      if (!id) return;
+      e.preventDefault();
+      scrollToSection(id);
+    });
+  });
+  if (location.hash) {
+    const start = location.hash.slice(1);
+    if (document.getElementById(start)) {
+      requestAnimationFrame(() => scrollToSection(start));
+    }
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  }, { threshold: 0.14, rootMargin: '0px 0px -6% 0px' });
+
+  const forceReveal = reduce || /(?:\?|&)shot=1(?:&|$)/.test(location.search);
+  if (forceReveal) {
+    document.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('in'));
+    if (bytes) bytes.classList.add('shift-on');
+  } else {
+    document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+    setTimeout(() => {
+      document.querySelectorAll('[data-reveal]:not(.in)').forEach((el) => el.classList.add('in'));
+    }, 1800);
+  }
+
+  const byteIo = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        bytes.classList.add('shift-on');
+        byteIo.disconnect();
+      }
+    }
+  }, { threshold: 0.45 });
+  if (bytes && !reduce) byteIo.observe(bytes);
+
+  function countUp(el, target) {
+    if (reduce) { el.textContent = String(target); return; }
+    const t0 = performance.now();
+    const dur = 900;
+    (function tick(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      el.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  function onScroll() {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - window.innerHeight;
+    const p = max > 0 ? window.scrollY / max : 0;
+    progress.style.width = (p * 100).toFixed(2) + '%';
+
+    if (dock) {
+      let cur = SECTIONS[0][0];
+      SECTIONS.forEach(([id]) => {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top < window.innerHeight * 0.36) cur = id;
+      });
+      dock.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.getAttribute('data-sec') === cur));
+      document.querySelectorAll('.chips .chip').forEach((c) => {
+        const href = (c.getAttribute('href') || '').replace('#', '');
+        c.classList.toggle('on', href === cur);
+      });
+    }
+
+    if (pipeRail && pipeline) {
+      const r = pipeline.getBoundingClientRect();
+      const wide = window.innerWidth > 980;
+      const inPipe = r.top < 120 && r.bottom > 220;
+      pipeRail.classList.toggle('is-float', wide && inPipe);
+      pipeRail.classList.toggle('is-away', r.bottom <= headerHeight() + 8);
+    }
+
+    if (phases.length && spineFill) {
+      const first = phases[0].getBoundingClientRect();
+      const last = phases[phases.length - 1].getBoundingClientRect();
+      const span = last.bottom - first.top;
+      const seen = window.innerHeight * 0.42 - first.top;
+      const t = Math.max(0, Math.min(1, seen / span));
+      spineFill.style.transform = 'scaleY(' + t + ')';
+      let active = 0;
+      let best = Infinity;
+      phases.forEach((ph, i) => {
+        const pr = ph.getBoundingClientRect();
+        const mid = Math.abs((pr.top + pr.bottom) / 2 - window.innerHeight * 0.42);
+        if (mid < best) { best = mid; active = i; }
+      });
+      if (Date.now() < lockUntil && lockPhase >= 0) active = lockPhase;
+      spineItems.forEach((item, i) => {
+        item.classList.toggle('on', i === active);
+        item.classList.toggle('done', i < active);
+        item.setAttribute('aria-current', i === active ? 'step' : 'false');
+        item.querySelector('.n').textContent = i < active ? '✓' : String(i + 1);
+      });
+    }
+
+    if (barsBox && !barsLit) {
+      const r = barsBox.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.82) {
+        barsLit = true;
+        barsBox.querySelectorAll('.bar-fill').forEach((el) => {
+          el.style.width = (reduce ? el.getAttribute('data-w') : el.getAttribute('data-w')) + '%';
+        });
+        if (!counted) {
+          counted = true;
+          document.querySelectorAll('[data-count]').forEach((el) => {
+            countUp(el, Number(el.getAttribute('data-count')));
+          });
+        }
+      }
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  function goPhase(i) {
+    const target = document.querySelector('.phase[data-phase="' + i + '"]');
+    if (!target) return;
+    lockPhase = Number(i);
+    lockUntil = Date.now() + 900;
+    spineItems.forEach((item, idx) => {
+      item.classList.toggle('on', idx === lockPhase);
+      item.classList.toggle('done', idx < lockPhase);
+      item.querySelector('.n').textContent = idx < lockPhase ? '✓' : String(idx + 1);
+    });
+    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  }
+  spineItems.forEach((item) => {
+    item.addEventListener('click', () => goPhase(item.getAttribute('data-phase')));
+  });
+  pipeRail && pipeRail.addEventListener('keydown', (e) => {
+    const cur = spineItems.findIndex((s) => s.classList.contains('on'));
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); goPhase(Math.min(4, cur + 1)); }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); goPhase(Math.max(0, cur - 1)); }
+  });
+
+  const replay = document.getElementById('replay-shift');
+  if (replay && bytes) {
+    replay.addEventListener('click', () => {
+      if (replay.disabled) return;
+      replay.disabled = true;
+      replay.textContent = 'Resetting…';
+      bytes.classList.remove('shift-on');
+      setTimeout(() => {
+        replay.textContent = 'Shifting +3…';
+        bytes.classList.add('shift-on');
+      }, 480);
+      setTimeout(() => {
+        replay.disabled = false;
+        replay.textContent = 'Replay the shift';
+      }, 1400);
+    });
+  }
+
+  document.querySelectorAll('.trap').forEach((el) => {
+    el.addEventListener('click', () => {
+      const on = el.classList.contains('on');
+      document.querySelectorAll('.trap').forEach((t) => t.classList.remove('on'));
+      if (!on) el.classList.add('on');
+    });
+  });
+
+  document.querySelectorAll('.callout[data-lit]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.callout').forEach((c) => c.classList.remove('on'));
+      btn.classList.add('on');
+      const keys = btn.getAttribute('data-lit').split(',');
+      document.querySelectorAll('.json .mark').forEach((m) => {
+        m.classList.toggle('lit', keys.includes(m.getAttribute('data-tip')));
+      });
+    });
+  });
+
+  document.querySelectorAll('.gcheck').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const on = btn.classList.contains('on');
+      document.querySelectorAll('.gcheck').forEach((g) => g.classList.remove('on'));
+      if (!on) btn.classList.add('on');
+    });
+  });
+
+  const AGENTS = [
+    {
+      id: 'data', label: 'Data', name: 'data-explorer', color: '#60a5fa', count: 5,
+      file: '.bob/agents/data-explorer.md', tools: 'Read',
+      skill: 'rippleguard-analyze',
+      job: 'Database impact scout. Searches db/, data/, CHAR(n), SUBSTR, CAST, CHECK patterns, and record layouts whose offsets shift when a field grows.',
+      hunts: 'db/ · data/ · layouts · DDL · views',
+      found: 'DB_CUSTOMERS_SCHEMA · DB_ORDERS_SCHEMA · DB_CUSTOMER_ORDERS_VIEW · DATA_CUSTOMERS_DAT · DATA_ORDERS_DAT',
+    },
+    {
+      id: 'code', label: 'Code', name: 'code-explorer', color: '#22d3ee', count: 4,
+      file: '.bob/agents/code-explorer.md', tools: 'Read',
+      skill: 'rippleguard-analyze',
+      job: 'Application-code scout. Hunts aliases (CUSID, custNo, acct), drift-copy constants, pad/slice literals, and indirect importers of shared layout/validation modules.',
+      hunts: 'src/ · aliases · CUSID_LEN · importers',
+      found: 'COMMON_VALIDATION · COMMON_RECORD_LAYOUTS · SVC_ORDER_SERVICE · SVC_CUSTOMER_SERVICE',
+    },
+    {
+      id: 'batch', label: 'Batch', name: 'batch-explorer', color: '#e879f9', count: 4,
+      file: '.bob/agents/batch-explorer.md', tools: 'Read',
+      skill: 'rippleguard-analyze',
+      job: 'Finds consumers everyone else misses — raw positional substring math, feed specs, and ops runbooks that name hand-maintained jobs.',
+      hunts: 'batch/ · config/ · docs/ops',
+      found: 'BATCH_NIGHTLY_BILLING · BATCH_PARTNER_FEED · CONFIG_FEED_LAYOUT · DOCS_BILLING_RUNBOOK',
+    },
+    {
+      id: 'api', label: 'API', name: 'api-explorer', color: '#818cf8', count: 2,
+      file: '.bob/agents/api-explorer.md', tools: 'Read',
+      skill: 'rippleguard-analyze',
+      job: 'Wire-contract scout. Pins maxLength/pattern, request validation, and where a new ticket endpoint must land.',
+      hunts: 'src/api/ · DTO · routes · R2',
+      found: 'API_CUSTOMER_DTO · API_ROUTES (incl. GET /orders/{orderNo}/status)',
+    },
+    {
+      id: 'test', label: 'Test', name: 'test-explorer', color: '#38bdf8', count: 2,
+      file: '.bob/agents/test-explorer.md', tools: 'Read',
+      skill: 'rippleguard-analyze',
+      job: 'Finds assertions and fixtures that flip when the format changes, plus untested paths that cannot prove a release.',
+      hunts: 'tests/ · length pins · fixtures',
+      found: 'TEST_VALIDATION · TEST_ORDER_SERVICE',
+    },
+  ];
+
+  const roster = document.getElementById('agent-roster');
+  const detail = document.getElementById('agent-detail');
+  function showAgent(id) {
+    const a = AGENTS.find((x) => x.id === id) || AGENTS[0];
+    if (roster) roster.querySelectorAll('.ag').forEach((el) => el.classList.toggle('on', el.getAttribute('data-agent') === a.id));
+    if (detail) {
+      detail.style.setProperty('--ag', a.color);
+      detail.innerHTML =
+        '<div class="ad-k">' + a.skill + ' · ' + a.file + '</div>' +
+        '<h4>' + a.label + ' · ' + a.name + '</h4>' +
+        '<p>' + a.job + '</p>' +
+        '<div class="meta"><span>tools: ' + a.tools + '</span><span>hunts: ' + a.hunts + '</span><span>' + a.count + ' ripples</span></div>' +
+        '<div class="found">' + a.found + '</div>';
+    }
+  }
+  if (roster) {
+    roster.innerHTML = AGENTS.map((a) =>
+      '<button type="button" class="ag" data-agent="' + a.id + '" style="--ag:' + a.color + '">' +
+      '<b>' + a.label + '</b><span>' + a.name + '</span><em>' + a.count + '</em></button>'
+    ).join('');
+    roster.querySelectorAll('.ag').forEach((el) => el.addEventListener('click', () => showAgent(el.getAttribute('data-agent'))));
+    showAgent('data');
+  }
+
+  const IMPL = {
+    in: '<ul class="rule-list"><li><i>✓</i><span>Schemas, views, shared layouts, validation, order/customer services, DTOs, routes including R2, tests.</span></li><li><i>✓</i><span>Transition: 9-char and 12-char ids both valid. Fixed-width fields widen; legacy ids right-padded.</span></li></ul>',
+    held: '<ul class="rule-list"><li><i>○</i><span>BATCH_NIGHTLY_BILLING, BATCH_PARTNER_FEED, CONFIG_FEED_LAYOUT stayed open until Finance Ops sign-off (ticket constraint).</span></li><li><i>○</i><span>The skill forbids silently expanding scope. Out-of-scope entries keep status open.</span></li></ul>',
+    rules: '<ul class="rule-list"><li><i>1</i><span>Ledger is the only authorized blast radius.</span></li><li><i>2</i><span>open → changed after the edit; changed → tested only after a proving test.</span></li><li><i>3</i><span>Waive DDL/docs only with an honest waiver_reason.</span></li><li><i>4</i><span>Never edit scripts/ripple-gate.js or bob_sessions/.</span></li></ul>',
+  };
+  const implPanel = document.getElementById('impl-panel');
+  document.querySelectorAll('#impl-pills button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#impl-pills button').forEach((b) => b.classList.remove('on'));
+      btn.classList.add('on');
+      if (implPanel) implPanel.innerHTML = IMPL[btn.getAttribute('data-impl')] || '';
+    });
+  });
+  if (implPanel) implPanel.innerHTML = IMPL.in;
+
+  const BOB = [
+    { id: 'cmd', title: 'Command · rippleguard', blurb: '.bob/commands/rippleguard.md — user-invocable pipeline. Four phases, each its own task. Confirm before advancing.', body: 'ANALYZE → IMPLEMENT → VERIFY → GATE. The command refuses to combine phases in one conversation. The last step is a Node process, not a model.' },
+    { id: 'analyze', title: 'Skill · rippleguard-analyze', blurb: 'PDF → evidence-linked ledger. Must not edit anything except artifacts/impact-ledger.json.', body: 'Step 1 document understanding. Step 2 five parallel explorers. Step 3 merge + quote fidelity (one physical line). Step 4 report and recommend the gate — which will block, because nothing is resolved yet.' },
+    { id: 'impl', title: 'Skill · rippleguard-implement', blurb: 'Edit only what the ledger names. Advance open → changed → tested with tests as proof.', body: 'Honors user scope cuts (Finance Ops). Waives DDL/docs with a reason. Runs the fixture suite. Reports the gate verdict honestly, including which ripples stayed open on purpose.' },
+    { id: 'verify', title: 'Skill · rippleguard-verify', blurb: 'Adversarial, read-only. May only downgrade statuses and write verify-report.md.', body: 'Re-derives impact from scratch with explorers + the verifier persona. A test of the old 9-character behavior does not count. Caught SVC_CUSTOMER_SERVICE on the live run.' },
+    { id: 'rule', title: 'Rule · rippleguard.md', blurb: 'Ledger is the source of truth. One phase per task. Gate verdict is verbatim.', body: 'Never edit the gate or bob_sessions/. Never soften a BLOCKED. Durable outputs go to files so the next task can work without the chat.' },
+    { id: 'ver', title: 'Persona · verifier', blurb: '.bob/agents/verifier.md — assumes the implementation is incomplete until proven.', body: 'Severity-ranked findings. Never suggests fixes. Ends with RELEASE APPROVED or RELEASE BLOCKED and names the blocking artifact.' },
+  ];
+  const bobRoster = document.getElementById('bob-roster');
+  const bobDetail = document.getElementById('bob-detail');
+  function showBob(id) {
+    const x = BOB.find((b) => b.id === id) || BOB[0];
+    if (bobRoster) bobRoster.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.getAttribute('data-bob') === x.id));
+    if (bobDetail) bobDetail.innerHTML = '<h4>' + x.title + '</h4><p>' + x.body + '</p>';
+  }
+  if (bobRoster) {
+    bobRoster.innerHTML = BOB.map((b) =>
+      '<button type="button" class="panel" data-bob="' + b.id + '"><b>' + b.title + '</b><span>' + b.blurb + '</span></button>'
+    ).join('');
+    bobRoster.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => showBob(b.getAttribute('data-bob'))));
+    showBob('analyze');
+  }
+
+  const DOMAIN_COLORS = {
+    database: '#60a5fa', code: '#22d3ee', batch: '#e879f9',
+    api: '#818cf8', test: '#38bdf8', config: '#a78bfa', docs: '#94a3b8',
+  };
+  const DOMAIN_LABEL = {
+    database: 'Data', code: 'Code', batch: 'Batch',
+    api: 'API', test: 'Test', config: 'Config', docs: 'Docs',
+  };
+  const PALETTE = { tested: '#34d399', changed: '#fbbf24', open: '#fb7185', waived: '#71717a' };
+  const RISK_R = { high: 118, medium: 158, low: 194 };
+  const glyph = { tested: '✓', open: '✕', changed: '~', waived: '–' };
+  const polar = (cx, cy, r, a) => [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+  const arcPath = (cx, cy, r, a0, a1) => {
+    const [x0, y0] = polar(cx, cy, r, a0);
+    const [x1, y1] = polar(cx, cy, r, a1);
+    return 'M ' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' A ' + r + ' ' + r + ' 0 ' + (a1 - a0 > Math.PI ? 1 : 0) + ' 1 ' + x1.toFixed(1) + ' ' + y1.toFixed(1);
+  };
+
+  function drawMap() {
+    const svg = document.getElementById('mini-map');
+    const live = window.RIPPLE_LIVE;
+    const arts = (live && live.ledger && live.ledger.artifacts) || [];
+    const sw = document.getElementById('domain-swatches');
+    if (!svg || !arts.length) {
+      if (svg) svg.innerHTML = '<text x="260" y="260" text-anchor="middle" fill="#77777f" font-size="13">Load gate-state.live.js</text>';
+      return;
+    }
+    const W = 520, H = 520, CX = 260, CY = 260;
+    const domains = [...new Set(arts.map((a) => a.domain || 'other'))];
+    if (sw) {
+      sw.innerHTML = domains.map((d) =>
+        '<span><i style="background:' + (DOMAIN_COLORS[d] || '#94a3b8') + '"></i>' + (DOMAIN_LABEL[d] || d) + '</span>'
+      ).join('');
+    }
+    const nodes = [];
+    const sectors = [];
+    const GAP = 0.07;
+    let cursor = -Math.PI / 2;
+    for (const d of domains) {
+      const group = arts.filter((a) => (a.domain || 'other') === d);
+      const span = (group.length / arts.length) * Math.PI * 2;
+      sectors.push({ domain: d, a0: cursor + GAP / 2, a1: cursor + span - GAP / 2 });
+      group.forEach((a, i) => {
+        const angle = cursor + span * ((i + 0.5) / group.length);
+        const tier = RISK_R[a.risk] ? a.risk : 'low';
+        const [x, y] = polar(CX, CY, RISK_R[tier], angle);
+        nodes.push({ a, x, y });
+      });
+      cursor += span;
+    }
+    const ringOpacity = [0.3, 0.2, 0.12];
+    const rings = Object.values(RISK_R).map((r, i) =>
+      '<circle class="ring-guide" cx="' + CX + '" cy="' + CY + '" r="' + r + '" stroke-opacity="' + (ringOpacity[i] ?? 0.12) + '"></circle>'
+    ).join('');
+    const R_ARC = 228;
+    const arcs = sectors.map((s) => {
+      const mid = (s.a0 + s.a1) / 2;
+      const label = (s.domain || '').toUpperCase();
+      const halfGap = ((label.length * 6.2) / 2 + 10) / R_ARC;
+      const [lx, ly] = polar(CX, CY, R_ARC, mid);
+      const c = DOMAIN_COLORS[s.domain] || '#94a3b8';
+      const seg = (a0, a1) => a1 - a0 > 0.03
+        ? '<path d="' + arcPath(CX, CY, R_ARC, a0, a1) + '" fill="none" stroke="' + c + '" stroke-width="1.4"></path>'
+        : '';
+      return seg(s.a0, mid - halfGap) + seg(mid + halfGap, s.a1) +
+        '<text x="' + lx.toFixed(1) + '" y="' + (ly + 3).toFixed(1) + '" fill="' + c + '" font-size="8.5" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" letter-spacing="0.6">' + label + '</text>';
+    }).join('');
+    const spokes = nodes.map((n) => {
+      const dx = n.x - CX, dy = n.y - CY;
+      const len = Math.hypot(dx, dy) || 1;
+      const x1 = CX + (dx / len) * 44, y1 = CY + (dy / len) * 44;
+      const x2 = n.x - (dx / len) * 16, y2 = n.y - (dy / len) * 16;
+      return '<line class="spoke" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '"></line>';
+    }).join('');
+    const nodeSvg = nodes.map((n) => {
+      const st = n.a.status || 'open';
+      const c = PALETTE[st] || '#22d3ee';
+      return '<g class="hit-node" data-id="' + String(n.a.id).replace(/"/g, '') + '" style="cursor:pointer">' +
+        '<circle cx="' + n.x.toFixed(1) + '" cy="' + n.y.toFixed(1) + '" r="16" fill="transparent"></circle>' +
+        '<circle cx="' + n.x.toFixed(1) + '" cy="' + n.y.toFixed(1) + '" r="14" fill="#141417" stroke="' + c + '" stroke-width="1.7"></circle>' +
+        '<text x="' + n.x.toFixed(1) + '" y="' + (n.y + 3.6).toFixed(1) + '" fill="' + c + '" font-size="11" font-weight="700" text-anchor="middle">' + (glyph[st] || '·') + '</text>' +
+        '</g>';
+    }).join('');
+    svg.innerHTML =
+      '<defs><radialGradient id="hiwGlow" cx="50%" cy="46%" r="55%"><stop offset="0%" stop-color="#0e3a46" stop-opacity=".55"/><stop offset="100%" stop-color="#0e3a46" stop-opacity="0"/></radialGradient></defs>' +
+      '<circle cx="' + CX + '" cy="' + CY + '" r="250" fill="url(#hiwGlow)"></circle>' +
+      rings + spokes + arcs +
+      '<circle cx="' + CX + '" cy="' + CY + '" r="38" fill="#22d3ee" fill-opacity="0.1" stroke="#22d3ee" stroke-opacity=".55" stroke-width="1.2"></circle>' +
+      '<circle cx="' + CX + '" cy="' + CY + '" r="30" fill="#0a0a0b" stroke="#22d3ee" stroke-opacity=".8" stroke-width="1.4"></circle>' +
+      '<text x="' + CX + '" y="' + (CY + 4) + '" text-anchor="middle" fill="#ececee" font-size="11" font-weight="600" font-family="IBM Plex Sans, sans-serif">CHG-1042</text>' +
+      nodeSvg;
+    const inspect = document.getElementById('map-inspect');
+    svg.querySelectorAll('.hit-node').forEach((g) => {
+      g.addEventListener('click', () => {
+        const art = arts.find((a) => a.id === g.getAttribute('data-id'));
+        if (!art || !inspect) return;
+        inspect.innerHTML =
+          '<div class="mi-id">' + art.id + ' · ' + (art.status || '') + ' · ' + (art.domain || '') + '</div>' +
+          '<p class="mi-why">' + (art.why || art.path) + '</p>';
+      });
+    });
+  }
+
+  drawMap();
+})();
+</script>
+</body>
+</html>

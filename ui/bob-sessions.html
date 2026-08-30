@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RippleGuard — The sessions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #141417;
+    --surface2: #1c1c21;
+    --border: #27272c;
+    --border2: #333339;
+    --text: #ececee;
+    --text2: #b4b4bc;
+    --muted: #77777f;
+    --accent: #22d3ee;
+    --accent-dim: rgba(34,211,238,.12);
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --danger: #fb7185;
+    --waived: #71717a;
+    --quote: #e8c47c;
+    --mono: 'IBM Plex Mono', Consolas, monospace;
+    --display: 'IBM Plex Serif', Georgia, serif;
+    --ease: cubic-bezier(.16, 1, .3, 1);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: auto; scroll-padding-top: 0; }
+  html, body { margin: 0; overflow-x: clip; }
+  body {
+    background:
+      radial-gradient(1300px 640px at 14% -12%, rgba(34,211,238,.09) 0%, transparent 58%),
+      radial-gradient(1100px 620px at 104% -10%, rgba(129,140,248,.06) 0%, transparent 55%),
+      radial-gradient(1000px 600px at 102% 114%, rgba(52,211,153,.05) 0%, transparent 55%),
+      radial-gradient(800px 520px at -8% 110%, rgba(232,121,249,.04) 0%, transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1;
+    background-image:
+      radial-gradient(1600px 1000px at 50% 34%, transparent 62%, rgba(0,0,0,.32) 100%),
+      radial-gradient(rgba(236,236,238,.03) 1px, transparent 1.4px);
+    background-size: 100% 100%, 30px 30px;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; z-index: -1;
+    width: 980px; height: 980px; border-radius: 50%;
+    left: -260px; top: -360px;
+    background: radial-gradient(circle, rgba(34,211,238,.065) 0%, rgba(129,140,248,.03) 45%, transparent 68%);
+    animation: aurora 30s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes aurora {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(46vw, 12vh) scale(1.12); }
+    100% { transform: translate(18vw, 42vh) scale(.92); }
+  }
+  .shell {
+    width: 100%;
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 48px;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,11,.85);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 40;
+  }
+  header::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: linear-gradient(90deg, transparent 2%, rgba(34,211,238,.45) 16%, rgba(34,211,238,.08) 46%, transparent 82%);
+    pointer-events: none;
+  }
+  .header-in { display: flex; align-items: center; gap: 22px; height: 72px; }
+  .wordmark { display: flex; align-items: baseline; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; }
+  .wordmark .name { font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+  .wordmark .name span { color: var(--accent); }
+  .wordmark .role { font-size: 12px; color: var(--muted); letter-spacing: .18em; text-transform: uppercase; }
+  .nav-links { display: flex; align-items: center; gap: 18px; }
+  .nav-links a {
+    color: var(--text2); text-decoration: none; font-size: 14px; letter-spacing: .02em;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a em { font-style: normal; color: var(--accent); margin-right: 6px; }
+  .header-end { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .tank-chip {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 12px; color: var(--text2);
+    min-width: 168px;
+  }
+  .tank-chip b { color: var(--accent); font-weight: 500; }
+  .tank-mini {
+    flex: 1; height: 6px; border-radius: 4px; overflow: hidden;
+    background: var(--surface2); box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
+  }
+  .tank-mini i {
+    display: block; height: 100%; width: 100%;
+    background: linear-gradient(90deg, #67e8f9, var(--accent));
+    transform-origin: left center;
+    transition: transform .7s var(--ease);
+  }
+  .real-badge {
+    font-size: 12px; font-weight: 700; letter-spacing: .14em;
+    color: #083344; background: linear-gradient(180deg, #67e8f9, #22d3ee);
+    border-radius: 5px; padding: 6px 13px;
+    box-shadow: 0 4px 14px rgba(34,211,238,.28);
+  }
+  .progress {
+    position: absolute; left: 0; bottom: -1px; height: 2px; width: 0;
+    background: var(--accent);
+    box-shadow: 0 0 12px rgba(34,211,238,.55);
+    z-index: 2; pointer-events: none;
+  }
+
+  .kicker {
+    font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; font-family: var(--mono);
+    margin: 0 0 16px;
+  }
+  .sec-h {
+    font-family: var(--display);
+    font-size: clamp(32px, 3.4vw, 48px);
+    font-weight: 500; letter-spacing: -.03em; line-height: 1.18; margin: 0 0 18px;
+  }
+  .lede { color: var(--text2); line-height: 1.7; font-size: 18px; margin: 0; max-width: 62ch; }
+  section.block { padding: calc(110px - 5vh) 0 48px; }
+  #decode,
+  #allotment {
+    padding-top: calc(110px + 4vh);
+    padding-bottom: calc(72px + 4vh);
+  }
+  #allotment { padding-bottom: calc(96px + 8vh); }
+  #s-4 {
+    padding-top: calc(110px + 4vh);
+    padding-bottom: 96px;
+  }
+  .center-sec .shell {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  .center-sec .kicker,
+  .center-sec .sec-h,
+  .center-sec .lede {
+    margin-left: auto; margin-right: auto;
+  }
+  .sess-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 18px; margin-bottom: 8px;
+  }
+  .sess-head .kicker, .sess-head .sec-h { margin-left: 0; }
+  .dl-md {
+    flex-shrink: 0;
+    display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    margin-top: 22px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+    color: #083344; background: linear-gradient(180deg, #67e8f9, #22d3ee);
+    border-radius: 7px; padding: 9px 14px; text-decoration: none; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(34,211,238,.22);
+    white-space: nowrap;
+  }
+  .dl-md small { font-weight: 400; font-size: 10px; letter-spacing: 0; opacity: .72; }
+  .dl-md:hover { filter: brightness(1.06); }
+  .plot-wrap { margin-top: 28px; overflow-x: auto; }
+  .plot {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .plot th {
+    text-align: left; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; padding: 0 10px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .plot td {
+    padding: 12px 10px; border-bottom: 1px solid var(--border);
+    color: var(--text2); vertical-align: top; line-height: 1.45;
+  }
+  .plot td:first-child { color: var(--text); font-weight: 500; white-space: nowrap; }
+  .plot .bad { color: var(--danger); font-family: var(--mono); font-size: 12px; }
+  .plot .good { color: var(--ok); font-family: var(--mono); font-size: 12px; }
+  .plot .dls { display: flex; flex-wrap: wrap; gap: 6px; }
+  .plot .dl {
+    color: #083344; background: var(--accent); border-radius: 5px;
+    padding: 4px 8px; text-decoration: none; font-family: var(--mono);
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .plot .dl.img {
+    color: var(--accent); background: transparent;
+    border-color: rgba(34,211,238,.45);
+  }
+  .score {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px; margin: 20px 0 28px;
+  }
+  .score > div {
+    padding: 12px 14px;
+    background: linear-gradient(180deg, #18181d 0%, #121215 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 12px 28px rgba(0,0,0,.22);
+  }
+  .score b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .score span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .score .no { border-color: rgba(251,113,133,.38); box-shadow: inset 2px 0 0 var(--danger), 0 12px 28px rgba(0,0,0,.22); }
+  .score .yes { border-color: rgba(52,211,153,.38); box-shadow: inset 2px 0 0 var(--ok), 0 12px 28px rgba(0,0,0,.22); }
+  .score .no b { color: var(--danger); }
+  .score .yes b { color: var(--ok); }
+  .key {
+    margin-top: 28px; padding: 20px 22px;
+  }
+  .key h3 { margin: 0 0 12px; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .key ol { margin: 0; padding-left: 18px; color: var(--text2); line-height: 1.65; }
+  .key li { margin-bottom: 8px; }
+  .key li:last-child { margin-bottom: 0; }
+  .key em { font-style: normal; color: var(--text); font-family: var(--mono); font-size: 13px; }
+  .panel {
+    background: linear-gradient(180deg, #18181d 0%, #121215 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 16px 36px rgba(0,0,0,.32);
+  }
+  [data-reveal] {
+    opacity: 0; transform: translateY(22px);
+    transition: opacity .7s var(--ease), transform .7s var(--ease);
+  }
+  [data-reveal].in { opacity: 1; transform: none; }
+  [data-reveal].d1 { transition-delay: .08s; }
+  [data-reveal].d2 { transition-delay: .16s; }
+  [data-reveal].d3 { transition-delay: .24s; }
+
+  .hero {
+    position: relative; isolation: isolate;
+    display: flex; align-items: center;
+    padding: calc(56px + 8vh) 0 36px;
+  }
+  .hero-copy { position: relative; z-index: 1; max-width: 860px; }
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(46px, 6.2vw, 78px);
+    font-weight: 500; letter-spacing: -.035em;
+    line-height: 1.08; margin: 0 0 28px;
+  }
+  .hero h1 span { display: block; }
+  .hero h1 .pay {
+    color: var(--accent); font-style: italic; font-weight: 400;
+    text-shadow: 0 0 46px rgba(34,211,238,.35);
+  }
+  .hero .lede { font-size: 21px; max-width: 68ch; }
+  .hero-rings { position: absolute; inset: -8% -10% auto auto; width: min(72vw, 720px); aspect-ratio: 1; pointer-events: none; }
+  .hero-rings i {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 1px solid rgba(34,211,238,.09);
+    animation: ringPulse 9s var(--ease) infinite;
+  }
+  .hero-rings i:nth-child(2) { inset: 70px; animation-delay: .7s; }
+  .hero-rings i:nth-child(3) { inset: 140px; animation-delay: 1.4s; }
+  .hero-rings i:nth-child(4) { inset: 210px; animation-delay: 2.1s; }
+  @keyframes ringPulse {
+    0%, 100% { transform: scale(1); opacity: .65; }
+    50% { transform: scale(1.035); opacity: 1; }
+  }
+  .chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 42px;
+    max-width: 640px;
+  }
+  .chip {
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit; font-size: 13px; color: var(--text2);
+    background: rgba(20,20,23,.72);
+    border: 1px solid var(--border);
+    border-radius: 999px; padding: 8px 12px;
+    text-decoration: none; letter-spacing: .02em;
+    white-space: nowrap;
+    transition: border-color .2s, color .2s, transform .2s var(--ease);
+  }
+  .chip:hover { color: var(--accent); border-color: rgba(34,211,238,.4); transform: translateY(-1px); }
+  .chip b { font-family: var(--mono); font-weight: 500; color: var(--accent); margin-right: 6px; font-size: 11px; }
+  .chip.on { color: var(--text); border-color: rgba(34,211,238,.5); background: var(--accent-dim); }
+
+  .sec-dock {
+    position: fixed; right: 18px; top: 50%; transform: translateY(-50%);
+    z-index: 35;
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 10px 8px;
+    border-radius: 16px;
+    background: rgba(10,10,11,.58);
+    backdrop-filter: blur(16px) saturate(1.15);
+    border: 1px solid rgba(255,255,255,.07);
+    box-shadow: 0 16px 40px rgba(0,0,0,.4);
+  }
+  .sec-dock button {
+    display: flex; align-items: center; gap: 8px;
+    background: none; border: 0; color: var(--muted);
+    font: inherit; font-size: 11px; letter-spacing: .04em;
+    padding: 5px 6px; cursor: pointer; border-radius: 8px;
+  }
+  .sec-dock button i {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border2); flex-shrink: 0;
+    transition: background .25s, box-shadow .25s, transform .25s var(--ease);
+  }
+  .sec-dock button:hover { color: var(--text2); background: rgba(255,255,255,.04); }
+  .sec-dock button.on { color: var(--text); }
+  .sec-dock button.on i {
+    transform: scale(1.25);
+    box-shadow: 0 0 10px rgba(34,211,238,.7);
+  }
+  .sec-dock button.blocked i { background: var(--danger); }
+  .sec-dock button.ok i { background: var(--ok); }
+  .sec-dock button.key i { background: #3b82f6; }
+  .sec-dock button.coins i { background: #fbbf24; }
+  .sec-dock button.files i { background: #6d28d9; }
+  .sec-dock button.on.blocked i { box-shadow: 0 0 10px rgba(251,113,133,.7); }
+  .sec-dock button.on.ok i { box-shadow: 0 0 10px rgba(52,211,153,.7); }
+  .sec-dock button.on.key i { box-shadow: 0 0 10px rgba(59,130,246,.75); }
+  .sec-dock button.on.coins i { box-shadow: 0 0 10px rgba(251,191,36,.75); }
+  .sec-dock button.on.files i { box-shadow: 0 0 10px rgba(109,40,217,.75); }
+  .sec-dock .lab { display: none; white-space: nowrap; }
+  .sec-dock:hover .lab { display: inline; }
+
+  /* allotment */
+  .withdrawals { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 36px; }
+  .wd {
+    padding: 16px 16px 14px;
+    cursor: pointer; text-align: left; font: inherit; color: inherit;
+    text-decoration: none; display: block;
+  }
+  .wd:hover { border-color: rgba(34,211,238,.35); }
+  .wd .wd-k { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .wd b { display: block; font-family: var(--mono); font-size: 26px; font-weight: 300; color: var(--accent); }
+  .wd.over b { color: var(--warn); }
+  .wd span { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .tank-big { margin-top: 28px; padding: 22px 24px; }
+  .tank-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .tank-head .left { font-family: var(--mono); font-size: 13px; color: var(--text2); }
+  .tank-head .left em { font-style: normal; color: var(--accent); }
+  .tank-track {
+    height: 14px; border-radius: 8px; overflow: hidden;
+    background: #0c0c10; border: 1px solid var(--border);
+  }
+  .tank-fill {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #0e7490, var(--accent));
+    transform-origin: left center;
+    transition: transform .8s var(--ease);
+    box-shadow: 0 0 18px rgba(34,211,238,.35);
+  }
+  .tank-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+  /* mission */
+  .mission-meta {
+    display: flex; flex-wrap: wrap; gap: 8px 10px; margin: 0 0 22px;
+  }
+  .pill {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    color: var(--text2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 10px; background: rgba(0,0,0,.22);
+  }
+  .pill.over { color: var(--warn); border-color: rgba(251,191,36,.35); }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
+  .tools code {
+    font-family: var(--mono); font-size: 11px; color: var(--text2);
+    background: rgba(0,0,0,.28); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 9px;
+  }
+  .quote-block {
+    margin-top: 22px; padding: 18px 20px;
+    border-left: 3px solid var(--quote);
+    background: rgba(0,0,0,.22);
+    border-radius: 0 12px 12px 0;
+  }
+  .quote-block p { margin: 0; font-family: var(--display); font-size: 20px; line-height: 1.45; color: var(--text); }
+  .quote-block cite { display: block; margin-top: 10px; font-style: normal; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .fan {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin: 28px 0 8px;
+  }
+  .fan .ag {
+    --ag: var(--accent);
+    position: relative;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity .5s var(--ease), transform .55s var(--ease);
+    display: flex; flex-direction: column; align-items: flex-start;
+    padding: 14px 14px 12px 16px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #18181d 0%, #121215 100%);
+    border: 1px solid color-mix(in srgb, var(--ag) 38%, var(--border));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 12px 28px rgba(0,0,0,.22);
+  }
+  .fan .ag::before {
+    content: '';
+    position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px;
+    border-radius: 0 2px 2px 0;
+    background: var(--ag);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--ag) 55%, transparent);
+  }
+  .fan.in .ag { opacity: 1; transform: none; }
+  .fan .ag:nth-child(1) { transition-delay: .02s; }
+  .fan .ag:nth-child(2) { transition-delay: .1s; }
+  .fan .ag:nth-child(3) { transition-delay: .18s; }
+  .fan .ag:nth-child(4) { transition-delay: .26s; }
+  .fan .ag:nth-child(5) { transition-delay: .34s; }
+  .fan .ag b {
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ag); font-weight: 600;
+  }
+  .fan .ag span {
+    display: block; margin-top: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--text2);
+  }
+  .fan .ag i {
+    display: block; margin-top: 10px;
+    font-style: normal; font-size: 11px; color: var(--muted); line-height: 1.35;
+  }
+  .fan-k {
+    text-align: left;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  .split {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 18px; align-items: stretch; margin-top: 32px;
+  }
+  .split-card { padding: 22px 22px 18px; }
+  .split-card .n {
+    font-family: var(--mono); font-size: 42px; font-weight: 300; line-height: 1; color: var(--accent);
+  }
+  .split-card .n small { font-size: 18px; color: var(--muted); }
+  .split-card h3 { margin: 12px 0 8px; font-size: 16px; font-weight: 600; }
+  .split-card p { margin: 0; color: var(--text2); font-size: 14px; line-height: 1.55; }
+  .split-vs {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; letter-spacing: .16em; color: var(--muted);
+  }
+
+  .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+  .metric { padding: 16px 16px 14px; }
+  .metric b { display: block; font-family: var(--mono); font-size: 28px; font-weight: 300; color: var(--accent); }
+  .metric span { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+
+  .stamp {
+    margin-top: 28px; padding: 18px 22px;
+    font-family: var(--mono); letter-spacing: .08em;
+    border-radius: 12px;
+  }
+  .stamp.blocked {
+    border: 1px solid rgba(251,113,133,.4);
+    background: linear-gradient(90deg, rgba(251,113,133,.1), transparent 60%), #121215;
+    color: var(--danger);
+    box-shadow: inset 3px 0 0 var(--danger);
+  }
+  .stamp.ok {
+    border: 1px solid rgba(52,211,153,.4);
+    background: linear-gradient(90deg, rgba(52,211,153,.1), transparent 60%), #121215;
+    color: var(--ok);
+    box-shadow: inset 3px 0 0 var(--ok);
+  }
+  .stamp .big { font-size: 22px; font-weight: 600; }
+  .stamp .sub { margin-top: 6px; font-size: 12px; letter-spacing: .04em; color: var(--text2); }
+
+  .catch {
+    margin-top: 22px; padding: 16px 18px;
+    border: 1px solid rgba(251,113,133,.3);
+    background: rgba(251,113,133,.06);
+    border-radius: 10px;
+    box-shadow: inset 3px 0 0 var(--danger);
+  }
+  .catch .ck { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--danger); font-weight: 600; margin-bottom: 6px; }
+  .catch p { margin: 0; font-size: 14px; color: var(--text2); line-height: 1.55; }
+
+  .honest {
+    margin-top: 22px; padding: 16px 18px;
+    border: 1px solid rgba(251,191,36,.28);
+    background: rgba(251,191,36,.06);
+    border-radius: 12px;
+    font-size: 14px; color: var(--text2); line-height: 1.6;
+  }
+  .honest b { color: var(--warn); }
+  .status-error {
+    display: inline-block;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .08em;
+    color: #0a0a0b; background: var(--warn);
+    border-radius: 4px; padding: 3px 8px; font-weight: 700;
+  }
+
+  .held { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+  .held li {
+    list-style: none; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 10px;
+    font-family: var(--mono); font-size: 13px; color: var(--text2);
+  }
+
+  .archive-grid {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 14px; margin-top: 36px; width: 100%;
+  }
+  .arc {
+    flex: 0 0 168px; width: 168px;
+    padding: 0 0 16px; text-align: center; color: inherit;
+    display: flex; flex-direction: column; align-items: center;
+    overflow: hidden;
+    transition: border-color .2s, transform .2s var(--ease);
+  }
+  .arc:hover { border-color: rgba(34,211,238,.4); transform: translateY(-3px); }
+  .arc-viz {
+    width: 100%; position: relative;
+    min-height: 118px;
+    background:
+      radial-gradient(120px 70px at 50% 20%, rgba(34,211,238,.12), transparent 70%),
+      #0c0c10;
+    border-bottom: 1px solid var(--border);
+  }
+  .arc-viz.shot { min-height: 0; }
+  .arc-viz.shot .arc-receipt { display: none; }
+  .arc-photo {
+    display: none; width: 100%; height: 118px; object-fit: cover; object-position: top;
+    background: #0c0c10;
+  }
+  .arc-viz.shot .arc-photo { display: block; }
+  .arc-receipt { padding: 16px 14px 14px; }
+  .arc-receipt .spent {
+    font-family: var(--mono); font-size: 28px; font-weight: 300; line-height: 1;
+    color: var(--accent);
+  }
+  .arc.over .arc-receipt .spent { color: var(--warn); }
+  .arc-receipt .unit {
+    margin-top: 4px; font-size: 10px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .arc-bar {
+    margin: 12px 10px 0; height: 6px; border-radius: 4px; overflow: hidden;
+    background: #18181d; border: 1px solid var(--border);
+  }
+  .arc-bar i {
+    display: block; height: 100%; width: 0;
+    background: linear-gradient(90deg, #0e7490, var(--accent));
+    box-shadow: 0 0 10px rgba(34,211,238,.35);
+  }
+  .arc.over .arc-bar i { background: linear-gradient(90deg, #b45309, var(--warn)); box-shadow: none; }
+  .arc-receipt .cap { margin-top: 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .arc b { display: block; margin: 14px 14px 2px; font-size: 15px; }
+  .arc .gate {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    color: var(--danger); margin-bottom: 4px;
+  }
+  .arc .gate.ok { color: var(--ok); }
+  .arc .meta { font-size: 11px; color: var(--muted); line-height: 1.45; padding: 0 12px; }
+  .arc-dl {
+    display: inline-flex; margin-top: 12px;
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: #083344; background: linear-gradient(180deg, #67e8f9, #22d3ee);
+    border-radius: 6px; padding: 7px 12px; text-decoration: none;
+    box-shadow: 0 4px 12px rgba(34,211,238,.2);
+  }
+  .arc-dl:hover { filter: brightness(1.06); }
+  .arc-extra {
+    display: none; margin-top: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--accent); text-decoration: none;
+  }
+  .arc-viz.shot ~ .arc-extra { display: inline-block; }
+
+  .finale { text-align: center; padding: 140px 0 80px; }
+  .finale h2 {
+    font-family: var(--display);
+    font-size: clamp(34px, 4.4vw, 56px);
+    font-weight: 500; letter-spacing: -.03em; line-height: 1.15; margin: 0 0 36px;
+  }
+  .finale h2 em { color: var(--accent); font-style: italic; }
+  .ctas { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center;
+    background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 7px; padding: 12px 20px; font-size: 15px;
+    font-family: inherit; text-decoration: none;
+    transition: border-color .15s, transform .1s, box-shadow .2s;
+  }
+  .btn:hover { border-color: var(--muted); transform: translateY(-1px); }
+  .btn.primary {
+    background: linear-gradient(180deg, #0891b2, #0e7490);
+    border-color: #0e7490; color: #eefdff; font-weight: 500;
+    box-shadow: 0 6px 18px rgba(8,145,178,.22);
+  }
+  footer {
+    padding: 0 0 40px;
+    color: var(--muted); font-size: 14px;
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer .mono { font-family: var(--mono); font-size: 11px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    body::after { animation: none; }
+    .hero-rings i { animation: none; }
+    [data-reveal] { opacity: 1; transform: none; transition: none; }
+    .fan .ag { opacity: 1; transform: none; }
+    .tank-fill, .tank-mini i { transition: none; }
+  }
+  @media (max-width: 980px) {
+    .withdrawals, .split, .metrics, .score, .fan { grid-template-columns: 1fr 1fr; }
+    .sess-head { flex-direction: column; align-items: flex-start; }
+    .dl-md { margin-top: 0; }
+    .split-vs { padding: 4px 0; }
+    .sec-dock { display: none; }
+    .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tank-chip { display: none; }
+  }
+  @media (max-width: 640px) {
+    .shell { padding: 0 20px; }
+    .header-in { height: 64px; gap: 12px; }
+    .wordmark .role { display: none; }
+    .chips { grid-template-columns: 1fr 1fr; }
+    .fan { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="shell header-in">
+    <a class="wordmark" href="index.html">
+      <div class="name">Ripple<span>Guard</span></div>
+      <div class="role">the sessions</div>
+    </a>
+    <nav class="nav-links">
+      <a href="how-it-works.html">How it works</a>
+      <a href="presentation.html">Pitch</a>
+      <a href="index.html"><em>←</em> Back to the gate</a>
+      <a href="https://github.com/DaniyalAfzaal/RippleGuard" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+    <div class="header-end">
+      <div class="tank-chip" title="Bobcoins remaining of the 40-coin allotment">
+        <b id="tank-label">40.00</b>
+        <div class="tank-mini"><i id="tank-mini"></i></div>
+      </div>
+      <span class="real-badge" title="Exported from the live hackathon Bob account">REAL</span>
+    </div>
+  </div>
+  <div class="progress" id="progress"></div>
+</header>
+<nav class="sec-dock" id="sec-dock" aria-label="Sessions"></nav>
+
+<section class="hero">
+  <div class="hero-rings" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="shell hero-copy">
+    <p class="kicker">The sessions</p>
+    <h1>
+      <span>Five Chats.</span>
+      <span>39.69 coins.</span>
+      <span class="pay">One release that can be re-run.</span>
+    </h1>
+    <p class="lede">Five IBM Bob chats, in order. The gate said no after the first four. It said yes after the fifth. Each chat has its own Download .md — that file is the evidence. The table below is the whole story.</p>
+    <nav class="chips" aria-label="Chats">
+      <a class="chip" href="#s-1a"><b>1</b>Analyze</a>
+      <a class="chip" href="#s-1b"><b>2</b>Re-Analyze</a>
+      <a class="chip" href="#s-2"><b>3</b>Implement</a>
+      <a class="chip" href="#s-3"><b>4</b>Verify</a>
+      <a class="chip" href="#s-4"><b>5</b>Fix + ship</a>
+      <a class="chip" href="#archive"><b>↓</b>All .md files</a>
+    </nav>
+  </div>
+</section>
+
+<section class="block" id="decode">
+  <div class="shell">
+    <p class="kicker" data-reveal>Read this once</p>
+    <h2 class="sec-h" data-reveal>Three counters. They never mix.</h2>
+    <div class="panel key" data-reveal>
+      <h3>How to read every chat</h3>
+      <ol>
+        <li><em>Required list = 15.</em> Seeded files the ticket must hit. Grep finds 12 of them. Bob must find all 15.</li>
+        <li><em>Ledger = required + extras.</em> Bob also named 2 data files. After chat 1 the ledger is 16 (14 required + 2 extras). After chat 2 it is 17 (15 required + 2 extras). It stays 17 forever after that.</li>
+        <li><em>Tests are a third counter.</em> 7 → 17 → 34. The middle 17 is tests, not ledger rows.</li>
+        <li><em>Gate.</em> BLOCKED until every ledger row is tested or waived. Analyze can only write the ledger, so chats 1 and 2 must stay blocked.</li>
+      </ol>
+    </div>
+    <div class="plot-wrap" data-reveal>
+      <table class="plot">
+        <thead>
+          <tr>
+            <th>Chat</th>
+            <th>Required</th>
+            <th>Ledger</th>
+            <th>Tests</th>
+            <th>Gate</th>
+            <th>Export</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1 · Analyze</td>
+            <td>14/15 · missed one</td>
+            <td>16 · all open</td>
+            <td>—</td>
+            <td class="bad">BLOCKED</td>
+            <td class="dls">
+              <a class="dl" href="../bob_sessions/01-analyze-run1.md" download="01-analyze-run1.md" target="_blank" rel="noopener">Markdown</a>
+              <a class="dl img" href="../bob_sessions/01-analyze-run1-coins.png" download="01-analyze-run1-coins.png" target="_blank" rel="noopener">Image</a>
+            </td>
+          </tr>
+          <tr>
+            <td>2 · Re-Analyze</td>
+            <td>15/15 · hole closed</td>
+            <td>17 · all open</td>
+            <td>—</td>
+            <td class="bad">BLOCKED</td>
+            <td class="dls">
+              <a class="dl" href="../bob_sessions/01-analyze-run2.md" download="01-analyze-run2.md" target="_blank" rel="noopener">Markdown</a>
+              <a class="dl img" href="../bob_sessions/01-analyze-run2-coins.png" download="01-analyze-run2-coins.png" target="_blank" rel="noopener">Image</a>
+            </td>
+          </tr>
+          <tr>
+            <td>3 · Implement</td>
+            <td>15/15</td>
+            <td>17 · 3 still open</td>
+            <td>7 → 17</td>
+            <td class="bad">BLOCKED</td>
+            <td class="dls">
+              <a class="dl" href="../bob_sessions/02-implement.md" download="02-implement.md" target="_blank" rel="noopener">Markdown</a>
+              <a class="dl img" href="../bob_sessions/02-implement-coins.png" download="02-implement-coins.png" target="_blank" rel="noopener">Image</a>
+            </td>
+          </tr>
+          <tr>
+            <td>4 · Verify</td>
+            <td>15/15</td>
+            <td>17 · 4 open</td>
+            <td>still 17</td>
+            <td class="bad">BLOCKED</td>
+            <td class="dls">
+              <a class="dl" href="../bob_sessions/03-verify.md" download="03-verify.md" target="_blank" rel="noopener">Markdown</a>
+              <a class="dl img" href="../bob_sessions/03-verify-coins.png" download="03-verify-coins.png" target="_blank" rel="noopener">Image</a>
+            </td>
+          </tr>
+          <tr>
+            <td>5 · Fix + ship</td>
+            <td>15/15</td>
+            <td>17 · 0 open</td>
+            <td>17 → 34</td>
+            <td class="good">APPROVED</td>
+            <td class="dls">
+              <a class="dl" href="../bob_sessions/04-fix-ship.md" download="04-fix-ship.md" target="_blank" rel="noopener">Markdown</a>
+              <a class="dl img" href="../bob_sessions/04-fix-ship-coins.png" download="04-fix-ship-coins.png" target="_blank" rel="noopener">Image</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="allotment">
+  <div class="shell">
+    <p class="kicker" data-reveal>The allotment</p>
+    <h2 class="sec-h" data-reveal>Forty coins. Solo account. No refill.</h2>
+    <p class="lede" data-reveal>Starting balance 40.00. Chats 3, 4, and 5 ran over their caps. Remaining at the end: 0.31.</p>
+    <div class="withdrawals">
+      <a class="wd panel" href="#s-1a" data-reveal><div class="wd-k">Chat 1 · cap 8</div><b>4.77</b><span>40.00 → 35.23</span></a>
+      <a class="wd panel d1" href="#s-1b" data-reveal><div class="wd-k">Chat 2 · cap 8</div><b>4.75</b><span>35.23 → 30.48</span></a>
+      <a class="wd panel over d2" href="#s-2" data-reveal><div class="wd-k">Chat 3 · cap 10</div><b>11.18</b><span>30.48 → 19.30 · over</span></a>
+      <a class="wd panel over d3" href="#s-3" data-reveal><div class="wd-k">Chat 4 · cap 5</div><b>9.44</b><span>19.30 → 9.86 · over</span></a>
+      <a class="wd panel over" href="#s-4" data-reveal><div class="wd-k">Chat 5 · cap 8</div><b>9.55</b><span>9.86 → 0.31 · over</span></a>
+    </div>
+    <div class="panel tank-big" data-reveal>
+      <div class="tank-head">
+        <div class="left">remaining <em id="tank-big-n">40.00</em> / 40</div>
+        <div class="left">spent <em>39.69</em></div>
+      </div>
+      <div class="tank-track"><div class="tank-fill" id="tank-fill"></div></div>
+      <p class="tank-note">Scroll the chats. The tank shows the balance after that chat. Amber withdrawals ran over the playbook cap.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="s-1a" data-remain="35.23">
+  <div class="shell">
+    <div class="sess-head">
+      <div>
+        <p class="kicker" data-reveal>Chat 1 of 5 · Analyze · 00:19</p>
+        <h2 class="sec-h" data-reveal>Read the PDF. Fan out five windows.</h2>
+      </div>
+      <a class="dl-md" href="../bob_sessions/01-analyze-run1.md" download="01-analyze-run1.md" target="_blank" rel="noopener">Download .md<small>01-analyze-run1.md</small></a>
+    </div>
+    <div class="score" data-reveal>
+      <div class="no"><b>Gate: BLOCKED</b><span>Nothing proven yet</span></div>
+      <div><b>Ledger: 16</b><span>14 of 15 required + 2 data files</span></div>
+      <div><b>Required: 14/15</b><span>Missed one. That is why there is a chat 2.</span></div>
+      <div><b>Coins: 4.77</b><span>40.00 → 35.23 · under cap 8</span></div>
+    </div>
+    <div class="mission-meta" data-reveal>
+      <span class="pill">rippleguard-analyze</span>
+      <span class="pill">write ledger only</span>
+    </div>
+    <p class="lede" data-reveal>First analyze: read the ticket PDF, spawn five read-only explorers, write the ledger. Do not implement. Run the gate and quote it.</p>
+    <p class="fan-k" data-reveal style="margin-top:32px">Five read-only windows</p>
+    <div class="fan" id="fan-1a" data-reveal>
+      <div class="ag" style="--ag:#60a5fa"><b>Data</b><span>data-explorer</span><i>widths · extracts</i></div>
+      <div class="ag" style="--ag:#22d3ee"><b>Code</b><span>code-explorer</span><i>aliases · drift copies</i></div>
+      <div class="ag" style="--ag:#e879f9"><b>Batch</b><span>batch-explorer</span><i>byte offsets · runbook</i></div>
+      <div class="ag" style="--ag:#818cf8"><b>API</b><span>api-explorer</span><i>routes · payloads</i></div>
+      <div class="ag" style="--ag:#38bdf8"><b>Test</b><span>test-explorer</span><i>9-char fixtures</i></div>
+    </div>
+    <div class="tools" data-reveal>
+      <code>use_skill</code>
+      <code>read_file · PDF</code>
+      <code>spawn_subagent × 5</code>
+      <code>write_file · ledger</code>
+      <code>execute_command · gate</code>
+    </div>
+    <div class="quote-block" data-reveal>
+      <p>16 artifacts in blast radius. All risk: high. All status: open.</p>
+      <cite>bob_sessions/01-analyze-run1.md · blast-radius summary</cite>
+    </div>
+    <div class="stamp blocked" data-reveal>
+      <div class="big">RELEASE BLOCKED</div>
+      <div class="sub">16 in the ledger · 14 of 15 required · missed one · all still open</div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="s-1b" data-remain="30.48">
+  <div class="shell">
+    <div class="sess-head">
+      <div>
+        <p class="kicker" data-reveal>Chat 2 of 5 · Re-Analyze · 00:26</p>
+        <h2 class="sec-h" data-reveal>Same job. The missing item lands.</h2>
+      </div>
+      <a class="dl-md" href="../bob_sessions/01-analyze-run2.md" download="01-analyze-run2.md" target="_blank" rel="noopener">Download .md<small>01-analyze-run2.md</small></a>
+    </div>
+    <div class="score" data-reveal>
+      <div class="no"><b>Gate: BLOCKED</b><span>Found everything. Still all open.</span></div>
+      <div><b>Ledger: 17</b><span>15 of 15 required + 2 data files</span></div>
+      <div><b>Required: 15/15</b><span>The hole from chat 1 is closed</span></div>
+      <div><b>Coins: 4.75</b><span>35.23 → 30.48 · under cap 8</span></div>
+    </div>
+    <div class="mission-meta" data-reveal>
+      <span class="pill">rippleguard-analyze</span>
+      <span class="pill">second pass · personas tightened</span>
+    </div>
+    <p class="lede" data-reveal>Chat 1 missed one item on the required list of 15. Explorers were tightened. Same PDF, same five windows. Now the required list is complete. The ledger is 17 because the two data files stayed.</p>
+    <div class="split">
+      <div class="panel split-card" data-reveal>
+        <div class="n">16</div>
+        <h3>After chat 1</h3>
+        <p>14 of 15 required + 2 data files. One hole. Gate blocked.</p>
+      </div>
+      <div class="split-vs" data-reveal>then</div>
+      <div class="panel split-card" data-reveal>
+        <div class="n">17</div>
+        <h3>After chat 2</h3>
+        <p>15 of 15 required + 2 data files. Nightly billing is on the list. Still all open — analyze does not fix code.</p>
+      </div>
+    </div>
+    <div class="quote-block" data-reveal>
+      <p>BATCH_NIGHTLY_BILLING — reads both extracts by raw byte offsets with no runtime guard; a silent field-shift will corrupt finance data without any error signal.</p>
+      <cite>bob_sessions/01-analyze-run2.md · most dangerous risk #1</cite>
+    </div>
+    <div class="stamp blocked" data-reveal>
+      <div class="big">RELEASE BLOCKED</div>
+      <div class="sub">17 in the ledger · 15 of 15 required · still all open · analyze does not ship</div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="s-2" data-remain="19.30">
+  <div class="shell">
+    <div class="sess-head">
+      <div>
+        <p class="kicker" data-reveal>Chat 3 of 5 · Implement · 00:41</p>
+        <h2 class="sec-h" data-reveal>Fix what is in scope. Hold the rest.</h2>
+      </div>
+      <a class="dl-md" href="../bob_sessions/02-implement.md" download="02-implement.md" target="_blank" rel="noopener">Download .md<small>02-implement.md</small></a>
+    </div>
+    <div class="score" data-reveal>
+      <div class="no"><b>Gate: BLOCKED</b><span>On purpose — three items held</span></div>
+      <div><b>Ledger: 17</b><span>Unchanged size. 3 still open</span></div>
+      <div><b>Tests: 7 → 17</b><span>This 17 is tests, not ledger rows</span></div>
+      <div><b>Coins: 11.18</b><span>30.48 → 19.30 · over cap 10</span></div>
+    </div>
+    <div class="mission-meta" data-reveal>
+      <span class="pill">rippleguard-implement</span>
+      <span class="pill">Finance Ops hold on batch + feed</span>
+    </div>
+    <p class="lede" data-reveal>Ticket says batch and the partner feed wait for Finance Ops. Those three ledger rows stay open. Everything else in scope gets a real test. The gate is supposed to stay red.</p>
+    <ul class="held" data-reveal>
+      <li>BATCH_NIGHTLY_BILLING · nightly_billing.js · not touched</li>
+      <li>BATCH_PARTNER_FEED · partner_feed.js · not touched</li>
+      <li>CONFIG_FEED_LAYOUT · feed-layout.json · V2 held</li>
+    </ul>
+    <div class="quote-block" data-reveal>
+      <p>The gate is blocked by design. The three open ripples are exactly the items left untouched pending Finance Ops sign-off.</p>
+      <cite>bob_sessions/02-implement.md · closing report</cite>
+    </div>
+    <div class="stamp blocked" data-reveal>
+      <div class="big">RELEASE BLOCKED</div>
+      <div class="sub">17 tests green · 3 ledger rows still open · billing not touched yet</div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="s-3" data-remain="9.86">
+  <div class="shell">
+    <div class="sess-head">
+      <div>
+        <p class="kicker" data-reveal>Chat 4 of 5 · Verify · 00:57</p>
+        <h2 class="sec-h" data-reveal>Audit only. Never upgrade a status.</h2>
+      </div>
+      <a class="dl-md" href="../bob_sessions/03-verify.md" download="03-verify.md" target="_blank" rel="noopener">Download .md<small>03-verify.md</small></a>
+    </div>
+    <div class="score" data-reveal>
+      <div class="no"><b>Gate: BLOCKED</b><span>Worse than after implement — 4 open</span></div>
+      <div><b>Ledger: 17</b><span>One “tested” was a lie. Now 4 open</span></div>
+      <div><b>Tests: still 17</b><span>Verifier does not add tests</span></div>
+      <div><b>Coins: 9.44</b><span>19.30 → 9.86 · over cap 5</span></div>
+    </div>
+    <div class="mission-meta" data-reveal>
+      <span class="pill">rippleguard-verify</span>
+      <span class="pill">may only downgrade</span>
+    </div>
+    <p class="lede" data-reveal>Search again from the PDF. Do not trust the ledger. The verifier may open a status. It may not close one. Nightly billing is still the old nine-byte reader in this chat.</p>
+    <div class="catch" data-reveal>
+      <div class="ck">Real catch · SVC_CUSTOMER_SERVICE</div>
+      <p>Marked <span style="font-family:var(--mono);color:var(--text)">tested</span> while the file was identical to the pre-change baseline. The referenced route test still used 9-character ids. Status went back to <span style="font-family:var(--mono);color:var(--text)">open</span>. Bob was not allowed to rubber-stamp itself.</p>
+    </div>
+    <div class="metrics">
+      <div class="panel metric" data-reveal><b>4</b><span>Open after the audit</span></div>
+      <div class="panel metric d1" data-reveal><b>1</b><span>Unearned tested · downgraded</span></div>
+      <div class="panel metric d2" data-reveal><b>0</b><span>Statuses upgraded</span></div>
+    </div>
+    <div class="quote-block" data-reveal>
+      <p>RELEASE BLOCKED — 4 unresolved open ripples. All tests pass and all 4 waivers are honest, but the implementation does not satisfy AC3, AC4, or AC5 as written.</p>
+      <cite>bob_sessions/03-verify.md · final verdict</cite>
+    </div>
+    <div class="stamp blocked" data-reveal>
+      <div class="big">RELEASE BLOCKED</div>
+      <div class="sub">4 ledger rows open · nightly billing still broken · one fake tested removed</div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="s-4" data-remain="0.31">
+  <div class="shell">
+    <div class="sess-head">
+      <div>
+        <p class="kicker" data-reveal>Chat 5 of 5 · Fix + ship · 01:12</p>
+        <h2 class="sec-h" data-reveal>Sign-off landed. The coins ran out.</h2>
+      </div>
+      <a class="dl-md" href="../bob_sessions/04-fix-ship.md" download="04-fix-ship.md" target="_blank" rel="noopener">Download .md<small>04-fix-ship.md</small></a>
+    </div>
+    <div class="score" data-reveal>
+      <div class="yes"><b>Gate: APPROVED</b><span>After the disclosed hand-finish</span></div>
+      <div><b>Ledger: 17</b><span>0 open · 12 tested · 5 waived</span></div>
+      <div><b>Tests: 17 → 34</b><span>Again: tests, not ledger rows</span></div>
+      <div><b>Coins: 9.55</b><span>9.86 → 0.31 · over cap 8 · ceiling</span></div>
+    </div>
+    <div class="mission-meta" data-reveal>
+      <span class="pill">rippleguard-implement</span>
+      <span class="status-error">Export Status: error</span>
+    </div>
+    <p class="lede" data-reveal>Finance Ops signed. Bob started the remaining work: billing from layouts, partner feed V2, a real 12-character customer. The export is marked error because the 40-coin tank hit empty mid-chat. The finish after that is disclosed below — no product code written by hand.</p>
+    <div class="honest" data-reveal>
+      <b>Manual finish, disclosed.</b> Task 4 hit the ceiling after the product implementation was complete. Four Windows <span style="font-family:var(--mono);font-size:12px">execSync</span> guard assertions and ledger bookkeeping were finished by hand. No product source was written outside Bob. Ledger close: BATCH_NIGHTLY_BILLING, BATCH_PARTNER_FEED, CONFIG_FEED_LAYOUT → tested; SVC_CUSTOMER_SERVICE → waived (file identical to baseline by design; 12-char behavior proven in routes.test.js).
+    </div>
+    <div class="stamp ok" data-reveal>
+      <div class="big">RELEASE APPROVED</div>
+      <div class="sub">17 in the ledger · 12 tested · 5 waived · 0 open · 34/34 tests · 59/60 evidence · exit 0</div>
+    </div>
+  </div>
+</section>
+
+<section class="block center-sec" id="archive">
+  <div class="shell">
+    <p class="kicker" data-reveal>All five exports</p>
+    <h2 class="sec-h" data-reveal>Chat export + coins for every task.</h2>
+    <p class="lede" data-reveal>Each card is one Bob chat. Download the markdown. The top of the card is that chat’s Bobcoin spend — the same numbers as the allotment tank. Drop a <span style="font-family:var(--mono);color:var(--text)">*-coins.png</span> into <span style="font-family:var(--mono);color:var(--text)">bob_sessions/</span> and the real consumption shot replaces the receipt.</p>
+    <div class="archive-grid">
+      <article class="panel arc" data-reveal>
+        <div class="arc-viz">
+          <img class="arc-photo" src="../bob_sessions/01-analyze-run1-coins.png" alt="Chat 1 Bobcoin consumption">
+          <div class="arc-receipt">
+            <div class="spent">4.77</div>
+            <div class="unit">Bobcoins</div>
+            <div class="arc-bar"><i style="width:60%"></i></div>
+            <div class="cap">cap 8 · 40.00 → 35.23</div>
+          </div>
+        </div>
+        <b>Chat 1 · Analyze</b>
+        <div class="gate">BLOCKED</div>
+        <div class="meta">required 14/15 · ledger 16</div>
+        <a class="arc-dl" href="../bob_sessions/01-analyze-run1.md" download="01-analyze-run1.md" target="_blank" rel="noopener">Download .md</a>
+        <a class="arc-extra" href="../bob_sessions/01-analyze-run1-coins.png" download="01-analyze-run1-coins.png" target="_blank" rel="noopener">Download coins.png</a>
+      </article>
+      <article class="panel arc d1" data-reveal>
+        <div class="arc-viz">
+          <img class="arc-photo" src="../bob_sessions/01-analyze-run2-coins.png" alt="Chat 2 Bobcoin consumption">
+          <div class="arc-receipt">
+            <div class="spent">4.75</div>
+            <div class="unit">Bobcoins</div>
+            <div class="arc-bar"><i style="width:59%"></i></div>
+            <div class="cap">cap 8 · 35.23 → 30.48</div>
+          </div>
+        </div>
+        <b>Chat 2 · Re-Analyze</b>
+        <div class="gate">BLOCKED</div>
+        <div class="meta">required 15/15 · ledger 17</div>
+        <a class="arc-dl" href="../bob_sessions/01-analyze-run2.md" download="01-analyze-run2.md" target="_blank" rel="noopener">Download .md</a>
+        <a class="arc-extra" href="../bob_sessions/01-analyze-run2-coins.png" download="01-analyze-run2-coins.png" target="_blank" rel="noopener">Download coins.png</a>
+      </article>
+      <article class="panel arc over d2" data-reveal>
+        <div class="arc-viz">
+          <img class="arc-photo" src="../bob_sessions/02-implement-coins.png" alt="Chat 3 Bobcoin consumption">
+          <div class="arc-receipt">
+            <div class="spent">11.18</div>
+            <div class="unit">Bobcoins · over cap</div>
+            <div class="arc-bar"><i style="width:100%"></i></div>
+            <div class="cap">cap 10 · 30.48 → 19.30</div>
+          </div>
+        </div>
+        <b>Chat 3 · Implement</b>
+        <div class="gate">BLOCKED</div>
+        <div class="meta">tests 7 → 17 · 3 still open</div>
+        <a class="arc-dl" href="../bob_sessions/02-implement.md" download="02-implement.md" target="_blank" rel="noopener">Download .md</a>
+        <a class="arc-extra" href="../bob_sessions/02-implement-coins.png" download="02-implement-coins.png" target="_blank" rel="noopener">Download coins.png</a>
+      </article>
+      <article class="panel arc over d3" data-reveal>
+        <div class="arc-viz">
+          <img class="arc-photo" src="../bob_sessions/03-verify-coins.png" alt="Chat 4 Bobcoin consumption">
+          <div class="arc-receipt">
+            <div class="spent">9.44</div>
+            <div class="unit">Bobcoins · over cap</div>
+            <div class="arc-bar"><i style="width:100%"></i></div>
+            <div class="cap">cap 5 · 19.30 → 9.86</div>
+          </div>
+        </div>
+        <b>Chat 4 · Verify</b>
+        <div class="gate">BLOCKED</div>
+        <div class="meta">tests still 17 · 4 open</div>
+        <a class="arc-dl" href="../bob_sessions/03-verify.md" download="03-verify.md" target="_blank" rel="noopener">Download .md</a>
+        <a class="arc-extra" href="../bob_sessions/03-verify-coins.png" download="03-verify-coins.png" target="_blank" rel="noopener">Download coins.png</a>
+      </article>
+      <article class="panel arc over" data-reveal>
+        <div class="arc-viz">
+          <img class="arc-photo" src="../bob_sessions/04-fix-ship-coins.png" alt="Chat 5 Bobcoin consumption">
+          <div class="arc-receipt">
+            <div class="spent">9.55</div>
+            <div class="unit">Bobcoins · over cap</div>
+            <div class="arc-bar"><i style="width:100%"></i></div>
+            <div class="cap">cap 8 · 9.86 → 0.31</div>
+          </div>
+        </div>
+        <b>Chat 5 · Fix + ship</b>
+        <div class="gate ok">APPROVED</div>
+        <div class="meta">tests 34 · ledger 17 · 0 open</div>
+        <a class="arc-dl" href="../bob_sessions/04-fix-ship.md" download="04-fix-ship.md" target="_blank" rel="noopener">Download .md</a>
+        <a class="arc-extra" href="../bob_sessions/04-fix-ship-coins.png" download="04-fix-ship-coins.png" target="_blank" rel="noopener">Download coins.png</a>
+      </article>
+    </div>
+    <p class="lede" style="margin-top:36px" data-reveal>How the machine works — fear, traps, ledger, gate — is a different page. <a href="how-it-works.html" style="color:var(--accent);text-decoration:none">How it works →</a></p>
+  </div>
+</section>
+
+<section class="finale" id="finale">
+  <div class="shell">
+    <h2 data-reveal>Five chats. Four blocks.<br><em>Then the gate signed yes.</em></h2>
+    <div class="ctas" data-reveal>
+      <a class="btn primary" href="index.html">Open the live verdict</a>
+      <a class="btn" href="how-it-works.html">How it works</a>
+      <a class="btn" href="../artifacts/certificate.html" target="_blank" rel="noopener">Impact certificate ↗</a>
+    </div>
+  </div>
+</section>
+
+<footer class="shell">
+  <a href="index.html">Release gate</a>
+  <a href="how-it-works.html">How it works</a>
+  <a href="presentation.html">Pitch</a>
+  <a href="https://github.com/DaniyalAfzaal/RippleGuard" target="_blank" rel="noopener">GitHub ↗</a>
+  <a href="../artifacts/certificate.html">Impact certificate</a>
+  <span class="mono">CHG-1042 · ledger 17 · required 15/15 · tests 34 · 39.69 / 40</span>
+</footer>
+
+<script>
+(function () {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const progress = document.getElementById('progress');
+  const tankMini = document.getElementById('tank-mini');
+  const tankFill = document.getElementById('tank-fill');
+  const tankLabel = document.getElementById('tank-label');
+  const tankBigN = document.getElementById('tank-big-n');
+
+  const SECTIONS = [
+    ['decode', 'Key', 'key'],
+    ['allotment', 'Coins', 'coins'],
+    ['s-1a', '1', 'blocked'],
+    ['s-1b', '2', 'blocked'],
+    ['s-2', '3', 'blocked'],
+    ['s-3', '4', 'blocked'],
+    ['s-4', '5', 'ok'],
+    ['archive', 'Files', 'files'],
+  ];
+
+  function headerHeight() {
+    const header = document.querySelector('header');
+    return header ? header.getBoundingClientRect().height : 72;
+  }
+  function scrollToSection(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const scroller = document.scrollingElement || document.documentElement;
+    const top = Math.max(0, Math.round(scroller.scrollTop + el.getBoundingClientRect().top - headerHeight()));
+    if (reduce) scroller.scrollTop = top;
+    else scroller.scrollTo({ top: top, behavior: 'smooth' });
+  }
+
+  const dock = document.getElementById('sec-dock');
+  if (dock) {
+    dock.innerHTML = SECTIONS.map(([id, lab, stamp], i) =>
+      '<button type="button" data-sec="' + id + '" class="' + stamp + (i === 0 ? ' on' : '') + '"><i></i><span class="lab">' + lab + '</span></button>'
+    ).join('');
+    dock.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => scrollToSection(btn.getAttribute('data-sec')));
+    });
+  }
+  document.querySelectorAll('.chips a[href^="#"], .wd[href^="#"]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      const id = (a.getAttribute('href') || '').slice(1);
+      if (!id) return;
+      e.preventDefault();
+      scrollToSection(id);
+    });
+  });
+  if (location.hash) {
+    const start = location.hash.slice(1);
+    if (document.getElementById(start)) requestAnimationFrame(() => scrollToSection(start));
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  }, { threshold: 0.14, rootMargin: '0px 0px -6% 0px' });
+  if (reduce) document.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('in'));
+  else document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+
+  function setRemain(n) {
+    const v = Math.max(0, Math.min(40, Number(n)));
+    const pct = (v / 40) * 100;
+    const label = v.toFixed(2);
+    if (tankLabel) tankLabel.textContent = label;
+    if (tankBigN) tankBigN.textContent = label;
+    if (tankMini) tankMini.style.transform = 'scaleX(' + (pct / 100) + ')';
+    if (tankFill) tankFill.style.transform = 'scaleX(' + (pct / 100) + ')';
+  }
+  setRemain(40);
+
+  function onScroll() {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - window.innerHeight;
+    const p = max > 0 ? window.scrollY / max : 0;
+    if (progress) progress.style.width = (p * 100).toFixed(2) + '%';
+
+    let cur = SECTIONS[0][0];
+    let remain = 40;
+    SECTIONS.forEach(([id]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.getBoundingClientRect().top < window.innerHeight * 0.36) {
+        cur = id;
+        if (el.dataset.remain) remain = Number(el.dataset.remain);
+      }
+    });
+    if (cur === 'archive' || cur === 'finale') remain = 0.31;
+    setRemain(remain);
+    if (dock) {
+      dock.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.getAttribute('data-sec') === cur));
+    }
+    document.querySelectorAll('.chips .chip').forEach((c) => {
+      const href = (c.getAttribute('href') || '').replace('#', '');
+      c.classList.toggle('on', href === cur);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  document.querySelectorAll('.arc-photo').forEach((img) => {
+    const viz = img.closest('.arc-viz');
+    const show = () => { if (viz) viz.classList.add('shot'); };
+    if (img.complete && img.naturalWidth > 0) show();
+    else {
+      img.addEventListener('load', show);
+      img.addEventListener('error', () => { img.removeAttribute('src'); });
+    }
+  });
+})();
+</script>
+</body>
+</html>

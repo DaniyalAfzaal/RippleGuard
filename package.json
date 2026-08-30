@@ -1,0 +1,22 @@
+{
+  "name": "rippleguard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RippleGuard — every legacy change creates a ripple. RippleGuard proves it's safe. Built for the IBM TechXchange 2026 Pre-conference Dev Day Hackathon with IBM Bob 2.0.",
+  "scripts": {
+    "test": "node --test \"fixtures/order-app/tests/*.test.js\"",
+    "gate": "node scripts/ripple-gate.js",
+    "gate:example": "node scripts/ripple-gate.js --ledger artifacts/impact-ledger.example.json",
+    "baseline": "node scripts/snapshot-baseline.js",
+    "audit-evidence": "node scripts/verify-evidence.js",
+    "grep-baseline": "node scripts/baseline-grep.js",
+    "tickets": "node scripts/make-ticket-pdf.js",
+    "ui": "node scripts/serve.js",
+    "api": "node fixtures/order-app/src/server.js",
+    "billing": "node fixtures/order-app/batch/nightly_billing.js",
+    "feed": "node fixtures/order-app/batch/partner_feed.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

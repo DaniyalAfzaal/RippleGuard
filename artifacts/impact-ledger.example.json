@@ -1,0 +1,192 @@
+{
+  "ticket_id": "CHG-1042",
+  "change": "Expand CUSTOMER_ID CHAR(9) -> CHAR(12); add GET /orders/{orderNo}/status",
+  "generated_by": "EXAMPLE ONLY — hand-written to develop the UI and gate. The real impact-ledger.json is produced by IBM Bob via the rippleguard-analyze skill; see bob_sessions/ for the exported task evidence.",
+  "artifacts": [
+    {
+      "id": "DB_CUSMAS",
+      "path": "fixtures/order-app/db/schema/customers.sql",
+      "why": "CUSTOMER_ID CHAR(9) column definition and format CHECK constraint",
+      "evidence": [
+        { "file": "fixtures/order-app/db/schema/customers.sql", "line": 5, "quote": "CUSTOMER_ID   CHAR(9)      NOT NULL," }
+      ],
+      "risk": "high",
+      "domain": "database",
+      "status": "waived",
+      "waiver_reason": "DDL migration script; fixture has no local DB engine. Widened to CHAR(12) and verified by review."
+    },
+    {
+      "id": "DB_ORDMAS",
+      "path": "fixtures/order-app/db/schema/orders.sql",
+      "why": "Foreign key CUSTOMER_ID CHAR(9) must match the widened master key",
+      "evidence": [
+        { "file": "fixtures/order-app/db/schema/orders.sql", "line": 6, "quote": "CUSTOMER_ID   CHAR(9)      NOT NULL," }
+      ],
+      "risk": "high",
+      "domain": "database",
+      "status": "waived",
+      "waiver_reason": "DDL migration script; fixture has no local DB engine. Widened to CHAR(12) and verified by review."
+    },
+    {
+      "id": "DB_CUSTORD_V",
+      "path": "fixtures/order-app/db/views/customer_orders_v.sql",
+      "why": "View truncates the key with SUBSTR(...,1,9) and casts to CHAR(9)",
+      "evidence": [
+        { "file": "fixtures/order-app/db/views/customer_orders_v.sql", "line": 5, "quote": "SELECT CAST(SUBSTR(C.CUSTOMER_ID, 1, 9) AS CHAR(9)) AS CUSTOMER_KEY," }
+      ],
+      "risk": "high",
+      "domain": "database",
+      "status": "waived",
+      "waiver_reason": "DDL migration script; fixture has no local DB engine. SUBSTR/CAST widened to 12 and verified by review."
+    },
+    {
+      "id": "COPYBOOK",
+      "path": "fixtures/order-app/src/common/recordLayouts.js",
+      "why": "Master record layout defines CUSTOMER_ID and ORDER_CUST width 9; every downstream offset shifts",
+      "evidence": [
+        { "file": "fixtures/order-app/src/common/recordLayouts.js", "line": 14, "quote": "const CUSTOMER_ID = Object.freeze({ start: 0, len: 9, pad: ' ' }); // key: AAA999999" },
+        { "file": "fixtures/order-app/src/common/recordLayouts.js", "line": 22, "quote": "const ORDER_CUST = Object.freeze({ start: 7, len: 9, pad: ' ' }); // same width as CUSTOMER_ID" }
+      ],
+      "risk": "high",
+      "domain": "code",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/orderService.test.js"
+    },
+    {
+      "id": "VALIDATION",
+      "path": "fixtures/order-app/src/common/validation.js",
+      "why": "CUSTOMER_ID_LENGTH = 9 and a 9-character regex reject the new 12-character format",
+      "evidence": [
+        { "file": "fixtures/order-app/src/common/validation.js", "line": 7, "quote": "const CUSTOMER_ID_LENGTH = 9;" },
+        { "file": "fixtures/order-app/src/common/validation.js", "line": 10, "quote": "const CUSTOMER_ID_PATTERN = /^[A-Z]{3}[0-9]{6}$/;" }
+      ],
+      "risk": "high",
+      "domain": "code",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/validation.test.js"
+    },
+    {
+      "id": "CUSTOMER_SVC",
+      "path": "fixtures/order-app/src/customer/customerService.js",
+      "why": "Normalizes lookup keys to the CUSTOMER_ID field width before matching the extract",
+      "evidence": [
+        { "file": "fixtures/order-app/src/customer/customerService.js", "line": 29, "quote": "const key = layouts.put(customerId, layouts.CUSTOMER_ID);" }
+      ],
+      "risk": "medium",
+      "domain": "code",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/validation.test.js"
+    },
+    {
+      "id": "ORDER_SVC",
+      "path": "fixtures/order-app/src/orders/orderService.js",
+      "why": "Local drift copy CUSID_LEN = 9 pads and SLICES incoming keys — silently truncates 12-character ids",
+      "evidence": [
+        { "file": "fixtures/order-app/src/orders/orderService.js", "line": 12, "quote": "const CUSID_LEN = 9;" },
+        { "file": "fixtures/order-app/src/orders/orderService.js", "line": 40, "quote": "const key = String(custNo).padEnd(CUSID_LEN, ' ').slice(0, CUSID_LEN).trim();" }
+      ],
+      "risk": "high",
+      "domain": "code",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/orderService.test.js"
+    },
+    {
+      "id": "API_DTO",
+      "path": "fixtures/order-app/src/api/dto/customerDto.js",
+      "why": "Wire contract pins customerId to maxLength 9 and the 9-character pattern",
+      "evidence": [
+        { "file": "fixtures/order-app/src/api/dto/customerDto.js", "line": 10, "quote": "customerId: { type: 'string', maxLength: 9, pattern: '^[A-Z]{3}[0-9]{6}$' }," }
+      ],
+      "risk": "medium",
+      "domain": "api",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/validation.test.js"
+    },
+    {
+      "id": "API_ROUTES",
+      "path": "fixtures/order-app/src/api/routes.js",
+      "why": "Routes validate 9-character ids on every endpoint; R2's /orders/{orderNo}/status endpoint lands here",
+      "evidence": [
+        { "file": "fixtures/order-app/src/api/routes.js", "line": 4, "quote": " *   GET /customers/{customerId}   lookup by CUSTOMER_ID" }
+      ],
+      "risk": "medium",
+      "domain": "api",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/orderService.test.js"
+    },
+    {
+      "id": "NIGHTLY_BILLING",
+      "path": "fixtures/order-app/batch/nightly_billing.js",
+      "why": "Hardcoded positional offsets substring(0,9), substring(7,16), substring(32,40) truncate 12-character keys and mis-read shifted credit fields; documented as hand-maintained in the ops runbook",
+      "evidence": [
+        { "file": "fixtures/order-app/batch/nightly_billing.js", "line": 30, "quote": "const acct = line.substring(0, 9);" },
+        { "file": "fixtures/order-app/batch/nightly_billing.js", "line": 39, "quote": "const acct = line.substring(7, 16); // ORDMAS acct key" },
+        { "file": "fixtures/order-app/batch/nightly_billing.js", "line": 41, "quote": "const credit = creditByAcct[acct.trim().padEnd(9, ' ').substring(0, 9)];" },
+        { "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md", "line": 12, "quote": "- Customer keys are `CUSTOMER_ID CHAR(9)`, format `AAA999999`." }
+      ],
+      "risk": "high",
+      "domain": "batch",
+      "status": "open"
+    },
+    {
+      "id": "PARTNER_FEED",
+      "path": "fixtures/order-app/batch/partner_feed.js",
+      "why": "Emits the fixed-width CUST_KEY field from the contractual partner layout; pad() truncates at spec width",
+      "evidence": [
+        { "file": "fixtures/order-app/batch/partner_feed.js", "line": 29, "quote": "rec += pad(c.id, byName.CUST_KEY);" }
+      ],
+      "risk": "high",
+      "domain": "batch",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/orderService.test.js"
+    },
+    {
+      "id": "FEED_LAYOUT",
+      "path": "fixtures/order-app/config/feed-layout.json",
+      "why": "Partner spec pins CUST_KEY width 9 and record_length 40; requires V2 bump with widened key",
+      "evidence": [
+        { "file": "fixtures/order-app/config/feed-layout.json", "line": 6, "quote": "{ \"name\": \"CUST_KEY\", \"offset\": 0, \"width\": 9, \"pad\": \" \" }," }
+      ],
+      "risk": "high",
+      "domain": "config",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/orderService.test.js"
+    },
+    {
+      "id": "TEST_VALIDATION",
+      "path": "fixtures/order-app/tests/validation.test.js",
+      "why": "Asserts length 9 is valid and length 12 is invalid — flips with the new format",
+      "evidence": [
+        { "file": "fixtures/order-app/tests/validation.test.js", "line": 18, "quote": "assert.equal(CUSTOMER_ID_LENGTH, 9);" }
+      ],
+      "risk": "medium",
+      "domain": "test",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/validation.test.js"
+    },
+    {
+      "id": "TEST_ORDERS",
+      "path": "fixtures/order-app/tests/orderService.test.js",
+      "why": "Fixtures assume 9-character keys in the data extracts",
+      "evidence": [
+        { "file": "fixtures/order-app/tests/orderService.test.js", "line": 7, "quote": "// Fixture data uses 9-character CUSTOMER_ID keys (see data/*.dat)." }
+      ],
+      "risk": "low",
+      "domain": "test",
+      "status": "tested",
+      "test": "fixtures/order-app/tests/orderService.test.js"
+    },
+    {
+      "id": "OPS_RUNBOOK",
+      "path": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md",
+      "why": "Documents the CHAR(9) contract and the hand-maintained billing offsets; must describe the new widths",
+      "evidence": [
+        { "file": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md", "line": 12, "quote": "- Customer keys are `CUSTOMER_ID CHAR(9)`, format `AAA999999`." }
+      ],
+      "risk": "low",
+      "domain": "docs",
+      "status": "waived",
+      "waiver_reason": "Documentation artifact; updated and human-reviewed, no executable test applies."
+    }
+  ]
+}

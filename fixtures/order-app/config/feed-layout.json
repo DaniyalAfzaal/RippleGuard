@@ -1,0 +1,11 @@
+{
+  "feed": "PARTNER-DAILY-V2",
+  "description": "Fixed-width customer feed consumed by 3PL partners. CHG-1042 (3PL coordination confirmed 2026-08-29): CUST_KEY widened from 9 to 12 bytes; all subsequent offsets shift +3; record_length 40->43. Field widths are contractual; changes require a spec version bump.",
+  "record_length": 43,
+  "fields": [
+    { "name": "CUST_KEY",     "offset": 0,  "width": 12, "pad": " " },
+    { "name": "CUST_NAME",    "offset": 12, "width": 20, "pad": " " },
+    { "name": "CUST_REGION",  "offset": 32, "width": 3,  "pad": " " },
+    { "name": "CREDIT_LIMIT", "offset": 35, "width": 8,  "pad": "0" }
+  ]
+}

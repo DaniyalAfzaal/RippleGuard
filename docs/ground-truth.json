@@ -1,0 +1,23 @@
+{
+  "ticket": "CHG-1042",
+  "change": "Expand CUSTOMER_ID CHAR(9) -> CHAR(12); add GET /orders/{orderNo}/status",
+  "grep_term": "CUSTOMER_ID",
+  "note": "Paths relative to repo root. grep_expected = whether a literal, case-sensitive search for CUSTOMER_ID inside fixtures/order-app finds the file.",
+  "artifacts": [
+    { "id": "DB_CUSMAS", "path": "fixtures/order-app/db/schema/customers.sql", "why": "CUSTOMER_ID CHAR(9) column + format CHECK", "grep_expected": true, "trap": null },
+    { "id": "DB_ORDMAS", "path": "fixtures/order-app/db/schema/orders.sql", "why": "FK CUSTOMER_ID CHAR(9)", "grep_expected": true, "trap": null },
+    { "id": "DB_CUSTORD_V", "path": "fixtures/order-app/db/views/customer_orders_v.sql", "why": "SUBSTR(CUSTOMER_ID,1,9) and CHAR(9) cast", "grep_expected": true, "trap": null },
+    { "id": "COPYBOOK", "path": "fixtures/order-app/src/common/recordLayouts.js", "why": "CUSTOMER_ID width 9 + ORDER_CUST width 9; downstream offsets shift", "grep_expected": true, "trap": null },
+    { "id": "VALIDATION", "path": "fixtures/order-app/src/common/validation.js", "why": "CUSTOMER_ID_LENGTH=9 and 9-char regex", "grep_expected": true, "trap": null },
+    { "id": "CUSTOMER_SVC", "path": "fixtures/order-app/src/customer/customerService.js", "why": "normalizes keys to CUSTOMER_ID field width", "grep_expected": true, "trap": null },
+    { "id": "ORDER_SVC", "path": "fixtures/order-app/src/orders/orderService.js", "why": "local CUSID_LEN=9 drift copy; padEnd/slice truncates 12-char keys", "grep_expected": false, "trap": "alias CUSID, no CUSTOMER_ID literal" },
+    { "id": "API_DTO", "path": "fixtures/order-app/src/api/dto/customerDto.js", "why": "customerId maxLength 9 + 9-char pattern in wire contract", "grep_expected": true, "trap": null },
+    { "id": "API_ROUTES", "path": "fixtures/order-app/src/api/routes.js", "why": "validates 9-char ids; new /orders/{orderNo}/status endpoint lands here", "grep_expected": true, "trap": null },
+    { "id": "NIGHTLY_BILLING", "path": "fixtures/order-app/batch/nightly_billing.js", "why": "hardcoded substring(0,9) / substring(7,16) / substring(32,40) offsets truncate 12-char keys and shift credit parsing", "grep_expected": false, "trap": "raw positional offsets, no key name at all; documented only in ops runbook" },
+    { "id": "PARTNER_FEED", "path": "fixtures/order-app/batch/partner_feed.js", "why": "emits fixed-width CUST_KEY from contractual layout", "grep_expected": true, "trap": null },
+    { "id": "FEED_LAYOUT", "path": "fixtures/order-app/config/feed-layout.json", "why": "CUST_KEY width 9 in partner spec; record_length 40 must grow", "grep_expected": false, "trap": "field is named CUST_KEY, not CUSTOMER_ID" },
+    { "id": "TEST_VALIDATION", "path": "fixtures/order-app/tests/validation.test.js", "why": "asserts length 9 valid and length 12 invalid; flips after the change", "grep_expected": true, "trap": null },
+    { "id": "TEST_ORDERS", "path": "fixtures/order-app/tests/orderService.test.js", "why": "fixtures assume 9-char keys in data extracts", "grep_expected": true, "trap": null },
+    { "id": "OPS_RUNBOOK", "path": "fixtures/order-app/docs/ops/BILLING-RUNBOOK.md", "why": "documents CHAR(9) contract and the hand-maintained billing offsets", "grep_expected": true, "trap": null }
+  ]
+}

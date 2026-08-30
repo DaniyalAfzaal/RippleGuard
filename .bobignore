@@ -1,0 +1,14 @@
+# Files Bob should not read during analysis.
+# Primary protection is the clean copy from scripts/export-for-bob.js.
+fixtures/order-app/out/
+docs/ground-truth.json
+docs/GROUND-TRUTH.md
+docs/BOB-RUNBOOK.md
+docs/METRICS.md
+artifacts/impact-ledger.example.json
+artifacts/baseline-grep.json
+artifacts/gate-result.json
+artifacts/certificate.html
+ui/gate-state.js
+README.md
+DEMO.md
